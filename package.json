@@ -1,0 +1,15 @@
+{
+  "name": "site",
+  "version": "0.0.1",
+  "description": "web dashboard of dadog",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "nsqjs": "^0.7.10",
+    "rethinkdb": "^1.6.0-0",
+    "socket.io": "^1.4.5"
+  }
+}

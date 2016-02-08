@@ -1,0 +1,265 @@
+Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
+   "use strict";
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values) return _elm.Main.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Dict = Elm.Dict.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $SocketIO = Elm.SocketIO.make(_elm),
+   $Task = Elm.Task.make(_elm);
+   var _op = {};
+   var log = function (r) {    var _p0 = r;if (_p0.ctor === "Ok") {    return r;} else {    return A2($Debug.log,_p0._0,r);}};
+   var rawBets = $Signal.mailbox("null");
+   var socket = A2($SocketIO.io,"",$SocketIO.defaultOptions);
+   var responses = Elm.Native.Task.make(_elm).perform(A2($Task.andThen,socket,A2($SocketIO.on,"update",rawBets.address)));
+   var apply = $Json$Decode.object2(F2(function (x,y) {    return x(y);}));
+   var constructing = $Json$Decode.succeed;
+   var Update = function (a) {    return {ctor: "Update",_0: a};};
+   var NoOp = {ctor: "NoOp"};
+   var actions = $Signal.mailbox(NoOp);
+   var moneyLineRow = function (row) {
+      var showOdd = function (odd) {
+         var _p1 = odd;
+         if (_p1.ctor === "MoneyLine") {
+               var _p2 = _p1._0;
+               return $Maybe.Just(A2($Html.tr,
+               _U.list([]),
+               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddA)])),A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddB)]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.tr,
+      _U.list([]),
+      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
+              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   };
+   var spreadRow = function (row) {
+      var showOdd = function (odd) {
+         var _p3 = odd;
+         if (_p3.ctor === "Spread") {
+               var _p4 = _p3._0;
+               return $Maybe.Just(A2($Html.tr,
+               _U.list([]),
+               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreA))]))
+                       ,A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreB))]))
+                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddA)]))
+                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddB)]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.tr,
+      _U.list([]),
+      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
+              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   };
+   var totalRow = function (row) {
+      var showOdd = function (odd) {
+         var _p5 = odd;
+         if (_p5.ctor === "Total") {
+               var _p6 = _p5._0;
+               return $Maybe.Just(A2($Html.tr,
+               _U.list([]),
+               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p6.score))]))
+                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddUnder)]))
+                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddOver)]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.tr,
+      _U.list([]),
+      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
+              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
+              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   };
+   var view = F2(function (address,model) {
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.table,
+              _U.list([]),
+              _U.list([A2($Html.thead,
+                      _U.list([]),
+                      _U.list([A2($Html.tr,
+                      _U.list([]),
+                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
+                      ,A2($Html.tbody,_U.list([]),A2($List.map,totalRow,$Dict.values(model.total)))]))
+              ,A2($Html.table,
+              _U.list([]),
+              _U.list([A2($Html.thead,
+                      _U.list([]),
+                      _U.list([A2($Html.tr,
+                      _U.list([]),
+                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
+                      ,A2($Html.tbody,_U.list([]),A2($List.map,spreadRow,$Dict.values(model.spread)))]))
+              ,A2($Html.table,
+              _U.list([]),
+              _U.list([A2($Html.thead,
+                      _U.list([]),
+                      _U.list([A2($Html.tr,
+                      _U.list([]),
+                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
+                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
+                      ,A2($Html.tbody,_U.list([]),A2($List.map,moneyLineRow,$Dict.values(model.moneyLine)))]))]));
+   });
+   var initialModel = {total: $Dict.empty,spread: $Dict.empty,moneyLine: $Dict.empty};
+   var addBet = F2(function (bet,model) {
+      var updateRow = function (dict) {
+         var _p7 = A2($Dict.get,bet.competitionToken,dict);
+         if (_p7.ctor === "Just") {
+               var _p8 = _p7._0;
+               return _U.update(_p8,{odds: A3($Dict.insert,bet.source,bet.odd,_p8.odds)});
+            } else {
+               return {teamA: bet.teamA
+                      ,teamB: bet.teamB
+                      ,time: bet.time
+                      ,league: bet.league
+                      ,region: bet.region
+                      ,sport: bet.sport
+                      ,odds: A2($Dict.singleton,bet.source,bet.odd)
+                      ,competitionToken: bet.competitionToken};
+            }
+      };
+      var _p9 = bet.oddType;
+      switch (_p9)
+      {case "total": return _U.update(model,{total: A3($Dict.insert,bet.competitionToken,updateRow(model.total),model.total)});
+         case "spread": return _U.update(model,{spread: A3($Dict.insert,bet.competitionToken,updateRow(model.spread),model.spread)});
+         case "money_line": return _U.update(model,{moneyLine: A3($Dict.insert,bet.competitionToken,updateRow(model.moneyLine),model.moneyLine)});
+         default: return model;}
+   });
+   var update = F2(function (action,model) {    var _p10 = action;if (_p10.ctor === "NoOp") {    return model;} else {    return A2(addBet,_p10._0,model);}});
+   var Row = F8(function (a,b,c,d,e,f,g,h) {    return {competitionToken: a,teamA: b,teamB: c,time: d,league: e,region: f,sport: g,odds: h};});
+   var Model = F3(function (a,b,c) {    return {total: a,spread: b,moneyLine: c};});
+   var Unknown = {ctor: "Unknown"};
+   var emptyBet = {teamA: "",teamB: "",oddType: "",time: "",league: "",region: "",sport: "",source: "",competitionToken: "",odd: Unknown};
+   var MoneyLine = function (a) {    return {ctor: "MoneyLine",_0: a};};
+   var Spread = function (a) {    return {ctor: "Spread",_0: a};};
+   var Total = function (a) {    return {ctor: "Total",_0: a};};
+   var MoneyLineOdd = F2(function (a,b) {    return {oddA: a,oddB: b};});
+   var SpreadOdd = F4(function (a,b,c,d) {    return {scoreA: a,scoreB: b,oddA: c,oddB: d};});
+   var TotalOdd = F3(function (a,b,c) {    return {score: a,oddUnder: b,oddOver: c};});
+   var oddDecoder = function (oddType) {
+      var _p11 = oddType;
+      switch (_p11)
+      {case "total": return A2($Json$Decode.map,
+           Total,
+           A4($Json$Decode.object3,
+           TotalOdd,
+           A2($Json$Decode._op[":="],"score",$Json$Decode.string),
+           A2($Json$Decode._op[":="],"odd_under",$Json$Decode.string),
+           A2($Json$Decode._op[":="],"odd_over",$Json$Decode.string)));
+         case "spread": return A2($Json$Decode.map,
+           Spread,
+           A5($Json$Decode.object4,
+           SpreadOdd,
+           A2($Json$Decode._op[":="],"score_a",$Json$Decode.string),
+           A2($Json$Decode._op[":="],"score_b",$Json$Decode.string),
+           A2($Json$Decode._op[":="],"odd_a",$Json$Decode.string),
+           A2($Json$Decode._op[":="],"odd_b",$Json$Decode.string)));
+         case "money_line": return A2($Json$Decode.map,
+           MoneyLine,
+           A3($Json$Decode.object2,MoneyLineOdd,A2($Json$Decode._op[":="],"odd_a",$Json$Decode.string),A2($Json$Decode._op[":="],"odd_b",$Json$Decode.string)));
+         default: return $Json$Decode.fail("Unknow odd type");}
+   };
+   var Bet = function (a) {
+      return function (b) {
+         return function (c) {
+            return function (d) {
+               return function (e) {
+                  return function (f) {
+                     return function (g) {
+                        return function (h) {
+                           return function (i) {
+                              return function (j) {
+                                 return {oddType: a,teamA: b,teamB: c,time: d,league: e,region: f,sport: g,source: h,competitionToken: i,odd: j};
+                              };
+                           };
+                        };
+                     };
+                  };
+               };
+            };
+         };
+      };
+   };
+   var betDecoder = A2($Json$Decode.andThen,
+   A2($Json$Decode._op[":="],"odd_type",$Json$Decode.string),
+   function (s) {
+      return A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,
+      A2(apply,A2(apply,constructing(Bet),A2($Json$Decode._op[":="],"odd_type",$Json$Decode.string)),A2($Json$Decode._op[":="],"team_a",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"team_b",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"time",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"league",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"region",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"sport",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"source",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"competition_token",$Json$Decode.string)),
+      A2($Json$Decode._op[":="],"odd",oddDecoder(s)));
+   });
+   var bets = A2($Signal.map,
+   Update,
+   A3($Signal.filterMap,function (_p12) {    return $Result.toMaybe(log(A2($Json$Decode.decodeString,betDecoder,_p12)));},emptyBet,rawBets.signal));
+   var model = A3($Signal.foldp,update,initialModel,bets);
+   var main = A2($Signal.map,view(actions.address),model);
+   return _elm.Main.values = {_op: _op
+                             ,Bet: Bet
+                             ,TotalOdd: TotalOdd
+                             ,SpreadOdd: SpreadOdd
+                             ,MoneyLineOdd: MoneyLineOdd
+                             ,Total: Total
+                             ,Spread: Spread
+                             ,MoneyLine: MoneyLine
+                             ,Unknown: Unknown
+                             ,Model: Model
+                             ,Row: Row
+                             ,addBet: addBet
+                             ,initialModel: initialModel
+                             ,emptyBet: emptyBet
+                             ,totalRow: totalRow
+                             ,spreadRow: spreadRow
+                             ,moneyLineRow: moneyLineRow
+                             ,view: view
+                             ,NoOp: NoOp
+                             ,Update: Update
+                             ,update: update
+                             ,actions: actions
+                             ,constructing: constructing
+                             ,apply: apply
+                             ,socket: socket
+                             ,rawBets: rawBets
+                             ,oddDecoder: oddDecoder
+                             ,betDecoder: betDecoder
+                             ,log: log
+                             ,bets: bets
+                             ,model: model
+                             ,main: main};
+};
