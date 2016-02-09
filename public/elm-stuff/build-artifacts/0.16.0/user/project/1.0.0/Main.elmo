@@ -4,16 +4,21 @@ Elm.Main.make = function (_elm) {
    _elm.Main = _elm.Main || {};
    if (_elm.Main.values) return _elm.Main.values;
    var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Format = Elm.Date.Format.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Dict = Elm.Dict.make(_elm),
    $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $SocketIO = Elm.SocketIO.make(_elm),
+   $String = Elm.String.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
    var log = function (r) {    var _p0 = r;if (_p0.ctor === "Ok") {    return r;} else {    return A2($Debug.log,_p0._0,r);}};
@@ -25,112 +30,165 @@ Elm.Main.make = function (_elm) {
    var Update = function (a) {    return {ctor: "Update",_0: a};};
    var NoOp = {ctor: "NoOp"};
    var actions = $Signal.mailbox(NoOp);
-   var moneyLineRow = function (row) {
-      var showOdd = function (odd) {
-         var _p1 = odd;
-         if (_p1.ctor === "MoneyLine") {
-               var _p2 = _p1._0;
-               return $Maybe.Just(A2($Html.tr,
-               _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddA)])),A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddB)]))])));
-            } else {
-               return $Maybe.Nothing;
-            }
-      };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   var translateTeamName = function (raw) {
+      var last = function (array) {    return A2($Array.get,$Array.length(array) - 1,array);};
+      var key = last($Array.fromList(A2($String.split," ",$String.toLower(raw))));
+      var _p1 = key;
+      if (_p1.ctor === "Nothing") {
+            return "Unknown";
+         } else {
+            var _p2 = _p1._0;
+            switch (_p2)
+            {case "76ers": return "76人";
+               case "blazers": return "拓荒者";
+               case "bucks": return "公鹿";
+               case "bulls": return "公牛";
+               case "cavaliers": return "騎士";
+               case "celtics": return "塞爾提克";
+               case "clippers": return "快艇";
+               case "grizzlies": return "灰熊";
+               case "hawks": return "老鷹";
+               case "heat": return "熱火";
+               case "hornets": return "黃蜂";
+               case "jazz": return "爵士";
+               case "kings": return "國王";
+               case "knicks": return "尼克";
+               case "lakers": return "湖人";
+               case "magic": return "魔術";
+               case "mavericks": return "小牛";
+               case "nets": return "籃網";
+               case "nuggets": return "金塊";
+               case "pacers": return "溜馬";
+               case "pelicans": return "鵜鶘";
+               case "pistons": return "活塞";
+               case "raptors": return "暴龍";
+               case "rockets": return "火箭";
+               case "spurs": return "馬刺";
+               case "suns": return "太陽";
+               case "thunder": return "雷霆";
+               case "timberwolves": return "灰狼";
+               case "warriors": return "勇士";
+               case "wizards": return "巫師";
+               default: return "不知道";}
+         }
    };
-   var spreadRow = function (row) {
-      var showOdd = function (odd) {
-         var _p3 = odd;
-         if (_p3.ctor === "Spread") {
-               var _p4 = _p3._0;
-               return $Maybe.Just(A2($Html.tr,
-               _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreA))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreB))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddA)]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddB)]))])));
-            } else {
-               return $Maybe.Nothing;
-            }
-      };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   var translateSource = function (source) {
+      var _p3 = source;
+      switch (_p3)
+      {case "twsport": return "台彩";
+         case "bet365": return "國際";
+         default: return "Unknown";}
+   };
+   var formatDate = function (orig) {
+      var _p4 = $Date.fromString(orig);
+      if (_p4.ctor === "Ok") {
+            return $Maybe.Just(A2($Date$Format.format,"%Y/%m/%d %H:%M",_p4._0));
+         } else {
+            return A2($Debug.log,_p4._0,$Maybe.Nothing);
+         }
+   };
+   var competitionInfo = function (row) {
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("competition-info")]),
+      _U.list([A2($Html.span,_U.list([$Html$Attributes.$class("team-name")]),_U.list([$Html.text(translateTeamName(row.teamA))]))
+              ,A2($Html.span,_U.list([$Html$Attributes.$class("vs")]),_U.list([$Html.text("v.s.")]))
+              ,A2($Html.span,_U.list([$Html$Attributes.$class("team-name")]),_U.list([$Html.text(translateTeamName(row.teamB))]))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("time")]),
+              _U.list([$Html.text(function () {    var _p5 = formatDate(row.time);if (_p5.ctor === "Just") {    return _p5._0;} else {    return "";}}())]))]));
    };
    var totalRow = function (row) {
-      var showOdd = function (odd) {
-         var _p5 = odd;
-         if (_p5.ctor === "Total") {
-               var _p6 = _p5._0;
-               return $Maybe.Just(A2($Html.tr,
+      var showOdd = function (_p6) {
+         var _p7 = _p6;
+         var _p8 = _p7._1;
+         if (_p8.ctor === "Total") {
+               var _p9 = _p8._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
                _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p6.score))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddUnder)]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddOver)]))])));
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p7._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.score),A2($Html.span,_U.list([]),_U.list([$Html.text("總分")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddOver),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddUnder),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))]))])));
             } else {
                return $Maybe.Nothing;
             }
       };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
+   };
+   var spreadRow = function (row) {
+      var showOdd = function (_p10) {
+         var _p11 = _p10;
+         var _p12 = _p11._1;
+         if (_p12.ctor === "Spread") {
+               var _p13 = _p12._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
+               _U.list([]),
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p11._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p13.scoreA,A2($Basics._op["++"],"/",_p13.scoreB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("讓分")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p13.oddA,A2($Basics._op["++"],"/",_p13.oddB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("賠率")]))]))]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
+   };
+   var moneyLineRow = function (row) {
+      var showOdd = function (_p14) {
+         var _p15 = _p14;
+         var _p16 = _p15._1;
+         if (_p16.ctor === "MoneyLine") {
+               var _p17 = _p16._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
+               _U.list([]),
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p15._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p17.oddA,A2($Basics._op["++"],"/",_p17.oddB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("賠率")]))]))]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
    };
    var view = F2(function (address,model) {
       return A2($Html.div,
-      _U.list([]),
-      _U.list([A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,totalRow,$Dict.values(model.total)))]))
-              ,A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,spreadRow,$Dict.values(model.spread)))]))
-              ,A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,moneyLineRow,$Dict.values(model.moneyLine)))]))]));
+      _U.list([$Html$Attributes.$class("container")]),
+      _U.list([A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("大小分")])),A2($List.map,totalRow,$Dict.values(model.total))))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("讓分")])),A2($List.map,spreadRow,$Dict.values(model.spread))))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("不讓分")])),A2($List.map,moneyLineRow,$Dict.values(model.moneyLine))))]));
    });
    var initialModel = {total: $Dict.empty,spread: $Dict.empty,moneyLine: $Dict.empty};
    var addBet = F2(function (bet,model) {
       var updateRow = function (dict) {
-         var _p7 = A2($Dict.get,bet.competitionToken,dict);
-         if (_p7.ctor === "Just") {
-               var _p8 = _p7._0;
-               return _U.update(_p8,{odds: A3($Dict.insert,bet.source,bet.odd,_p8.odds)});
+         var _p18 = A2($Dict.get,bet.competitionToken,dict);
+         if (_p18.ctor === "Just") {
+               var _p19 = _p18._0;
+               return _U.update(_p19,{odds: A3($Dict.insert,bet.source,bet.odd,_p19.odds)});
             } else {
                return {teamA: bet.teamA
                       ,teamB: bet.teamB
@@ -142,14 +200,14 @@ Elm.Main.make = function (_elm) {
                       ,competitionToken: bet.competitionToken};
             }
       };
-      var _p9 = bet.oddType;
-      switch (_p9)
+      var _p20 = bet.oddType;
+      switch (_p20)
       {case "total": return _U.update(model,{total: A3($Dict.insert,bet.competitionToken,updateRow(model.total),model.total)});
          case "spread": return _U.update(model,{spread: A3($Dict.insert,bet.competitionToken,updateRow(model.spread),model.spread)});
          case "money_line": return _U.update(model,{moneyLine: A3($Dict.insert,bet.competitionToken,updateRow(model.moneyLine),model.moneyLine)});
          default: return model;}
    });
-   var update = F2(function (action,model) {    var _p10 = action;if (_p10.ctor === "NoOp") {    return model;} else {    return A2(addBet,_p10._0,model);}});
+   var update = F2(function (action,model) {    var _p21 = action;if (_p21.ctor === "NoOp") {    return model;} else {    return A2(addBet,_p21._0,model);}});
    var Row = F8(function (a,b,c,d,e,f,g,h) {    return {competitionToken: a,teamA: b,teamB: c,time: d,league: e,region: f,sport: g,odds: h};});
    var Model = F3(function (a,b,c) {    return {total: a,spread: b,moneyLine: c};});
    var Unknown = {ctor: "Unknown"};
@@ -161,8 +219,8 @@ Elm.Main.make = function (_elm) {
    var SpreadOdd = F4(function (a,b,c,d) {    return {scoreA: a,scoreB: b,oddA: c,oddB: d};});
    var TotalOdd = F3(function (a,b,c) {    return {score: a,oddUnder: b,oddOver: c};});
    var oddDecoder = function (oddType) {
-      var _p11 = oddType;
-      switch (_p11)
+      var _p22 = oddType;
+      switch (_p22)
       {case "total": return A2($Json$Decode.map,
            Total,
            A4($Json$Decode.object3,
@@ -227,7 +285,7 @@ Elm.Main.make = function (_elm) {
    });
    var bets = A2($Signal.map,
    Update,
-   A3($Signal.filterMap,function (_p12) {    return $Result.toMaybe(log(A2($Json$Decode.decodeString,betDecoder,_p12)));},emptyBet,rawBets.signal));
+   A3($Signal.filterMap,function (_p23) {    return $Result.toMaybe(log(A2($Json$Decode.decodeString,betDecoder,_p23)));},emptyBet,rawBets.signal));
    var model = A3($Signal.foldp,update,initialModel,bets);
    var main = A2($Signal.map,view(actions.address),model);
    return _elm.Main.values = {_op: _op
@@ -244,9 +302,13 @@ Elm.Main.make = function (_elm) {
                              ,addBet: addBet
                              ,initialModel: initialModel
                              ,emptyBet: emptyBet
+                             ,formatDate: formatDate
+                             ,translateSource: translateSource
+                             ,translateTeamName: translateTeamName
                              ,totalRow: totalRow
                              ,spreadRow: spreadRow
                              ,moneyLineRow: moneyLineRow
+                             ,competitionInfo: competitionInfo
                              ,view: view
                              ,NoOp: NoOp
                              ,Update: Update

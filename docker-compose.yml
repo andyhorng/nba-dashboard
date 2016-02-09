@@ -10,6 +10,14 @@ rethinkdb:
   ports:
     - "8080:8080"
     - "28015:28015"
+
+python:
+  image: python:2
+  stdin_open: true
+  tty: true
+  links:
+    - rethinkdb:rethinkdb-driver
+
 site:
   build: .
   volumes: 

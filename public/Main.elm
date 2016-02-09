@@ -1,12 +1,18 @@
 module Main where
 
 import Html exposing (..)
+import Html.Attributes exposing (..)
 import Json.Decode exposing (..)
 import Json.Encode
 import Signal exposing (Signal, Address)
 import SocketIO
 import Dict
 import Task exposing (Task)
+import Date.Format
+import Date
+import String
+import List
+import Array
 
 -- model
 
@@ -119,96 +125,196 @@ emptyBet = {
 
 -- view
 
+formatDate : String -> Maybe String
+formatDate orig = 
+  case Date.fromString orig of 
+    Ok date ->
+      Just <| Date.Format.format "%Y/%m/%d %H:%M" date
+    Err s ->
+      Debug.log s
+      Nothing
+
+translateSource : String -> String
+translateSource source = 
+  case source of 
+
+    "twsport" ->
+      "台彩"
+
+    "bet365" ->
+      "國際"
+
+    _ ->
+      "Unknown"
+
+translateTeamName : String -> String
+translateTeamName raw = 
+  let
+      last : Array.Array String -> Maybe String
+      last array = Array.get ((Array.length array)-1) array
+      key = String.split " " (String.toLower raw) |> Array.fromList |> last
+  in
+      case key of
+        Nothing ->
+          "Unknown"
+
+        Just s ->
+          case s of
+            "76ers" -> 
+              "76人"
+            "blazers" ->
+              "拓荒者"
+            "bucks" ->
+              "公鹿"
+            "bulls" ->
+              "公牛"
+            "cavaliers" ->
+              "騎士"
+            "celtics" ->
+              "塞爾提克"
+            "clippers" ->
+              "快艇"
+            "grizzlies" ->
+              "灰熊"
+            "hawks" ->
+              "老鷹"
+            "heat" ->
+              "熱火"
+            "hornets" ->
+              "黃蜂"
+            "jazz" ->
+              "爵士"
+            "kings" ->
+              "國王"
+            "knicks" ->
+              "尼克"
+            "lakers" ->
+              "湖人"
+            "magic" ->
+              "魔術"
+            "mavericks" ->
+              "小牛"
+            "nets" ->
+              "籃網"
+            "nuggets" ->
+              "金塊"
+            "pacers" ->
+              "溜馬"
+            "pelicans" ->
+              "鵜鶘"
+            "pistons" ->
+              "活塞"
+            "raptors" ->
+              "暴龍"
+            "rockets" ->
+              "火箭"
+            "spurs" ->
+              "馬刺"
+            "suns" ->
+              "太陽"
+            "thunder" ->
+              "雷霆"
+            "timberwolves" ->
+              "灰狼"
+            "warriors" ->
+              "勇士"
+            "wizards" ->
+              "巫師"
+            _ -> 
+              "不知道"
+
+
 totalRow : Row -> Html
 totalRow row = 
   let 
-      showOdd : Odd -> Maybe Html
-      showOdd odd = 
+      showOdd : (String, Odd) -> Maybe Html
+      showOdd (source, odd) = 
         case odd of 
           Total data ->
-            Just <| tr [] 
-              [ td [] [(text <| toString <| data.score)]
-              , td [] [(text data.oddUnder)]
-              , td [] [(text data.oddOver)] ]
+            Just <| 
+              div [class "stats"] 
+                [ ul [] 
+                  [ li [] [text <| translateSource source, span [] [text "盤"]]
+                  , li [] [text data.score, span [] [(text "總分")]]
+                  , li [] [text data.oddOver, span [] [(text "大於")]]
+                  , li [] [text data.oddUnder, span [] [(text "大於")]]
+                  ]
+                ]
+
           _ ->
             Nothing
   in
-    tr [] 
-      [ td [] [ text row.teamA ] 
-      , td [] [ text row.teamB ]
-      , td [] [ text row.time ]
-      , td [] (List.filterMap showOdd (Dict.values row.odds) )
+    div [class "row"] 
+      [ competitionInfo row
+      , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
 spreadRow : Row -> Html
 spreadRow row = 
   let 
-      showOdd : Odd -> Maybe Html
-      showOdd odd = 
+      showOdd : (String, Odd) -> Maybe Html
+      showOdd (source, odd) = 
         case odd of 
           Spread data ->
-            Just <| tr [] 
-              [ td [] [(text <| toString <| data.scoreA)]
-              , td [] [(text <| toString <| data.scoreB)]
-              , td [] [(text data.oddA)]
-              , td [] [(text data.oddB)] ]
+            Just <|
+              div [class "stats"] 
+                [ ul [] 
+                  [ li [] [text <| translateSource source, span [] [text "盤"]]
+                  , li [] [text (data.scoreA ++ "/" ++ data.scoreB), span [] [(text "讓分")]]
+                  , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+                  ]
+                ]
           _ ->
             Nothing
   in
-    tr [] 
-      [ td [] [ text row.teamA ] 
-      , td [] [ text row.teamB ]
-      , td [] [ text row.time ]
-      , td [] (List.filterMap showOdd (Dict.values row.odds))
+    div [class "row"] 
+      [ competitionInfo row
+      , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
 moneyLineRow : Row -> Html
 moneyLineRow row = 
   let 
-      showOdd : Odd -> Maybe Html
-      showOdd odd = 
+      showOdd : (String, Odd) -> Maybe Html
+      showOdd (source, odd) = 
         case odd of 
           MoneyLine data ->
-            Just <| tr [] 
-              [ td [] [(text data.oddA)]
-              , td [] [(text data.oddB)]
-              ]
+            Just <| 
+              div [class "stats"] 
+                [ ul [] 
+                  [ li [] [text <| translateSource source, span [] [text "盤"]]
+                  , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+                  ]
+                ]
           _ ->
             Nothing
   in
-    tr [] 
-      [ td [] [ text row.teamA ] 
-      , td [] [ text row.teamB ]
-      , td [] [ text row.time ]
-      , td [] (List.filterMap showOdd (Dict.values row.odds) )
+    div [class "row"] 
+      [ competitionInfo row
+      , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
+
+competitionInfo : Row -> Html
+competitionInfo row = 
+  div [class "competition-info"]
+    [ span [class "team-name"] [text <| translateTeamName row.teamA]
+    , span [class "vs"] [text "v.s."]
+    , span [class "team-name"] [text <| translateTeamName row.teamB] 
+    , div [class "time"] [text <| case formatDate row.time of 
+        Just dstr -> 
+          dstr
+
+        Nothing -> 
+          ""
+      ] 
+    ]
 
 view : Address Action -> Model -> Html
 view address model = 
-  div [] 
-    [ table [] 
-      [ (thead [] [tr [] 
-        [ th [] [text "隊伍A"]
-        , th [] [text "隊伍B"]
-        , th [] [text "時間"]
-        , th [] [text "賠率"]]])
-      , (tbody [] (List.map totalRow (Dict.values model.total)))]
-
-    , table [] 
-      [ (thead [] [tr [] 
-        [ th [] [text "隊伍A"]
-        , th [] [text "隊伍B"]
-        , th [] [text "時間"]
-        , th [] [text "賠率"]]])
-      , (tbody [] (List.map spreadRow (Dict.values model.spread)))]
-
-    , table [] 
-      [ (thead [] [tr [] 
-        [ th [] [text "隊伍A"]
-        , th [] [text "隊伍B"]
-        , th [] [text "時間"]
-        , th [] [text "賠率"]]])
-      , (tbody [] (List.map moneyLineRow (Dict.values model.moneyLine)))]
+  div [class "container"] 
+    [ div [class "type"] <| (h3 [] [text "大小分"]) ::  List.map totalRow (Dict.values model.total) 
+    , div [class "type"] <| (h3 [] [text "讓分"]) ::  List.map spreadRow (Dict.values model.spread) 
+    , div [class "type"] <| (h3 [] [text "不讓分"]) ::  List.map moneyLineRow (Dict.values model.moneyLine) 
     ]
 
 

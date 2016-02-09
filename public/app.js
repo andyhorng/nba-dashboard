@@ -3271,6 +3271,46 @@ Elm.Color.make = function (_elm) {
                               ,gray: gray
                               ,darkGray: darkGray};
 };
+Elm.Native.Date = {};
+Elm.Native.Date.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Date = localRuntime.Native.Date || {};
+	if (localRuntime.Native.Date.values)
+	{
+		return localRuntime.Native.Date.values;
+	}
+
+	var Result = Elm.Result.make(localRuntime);
+
+	function readDate(str)
+	{
+		var date = new Date(str);
+		return isNaN(date.getTime())
+			? Result.Err('unable to parse \'' + str + '\' as a date')
+			: Result.Ok(date);
+	}
+
+	var dayTable = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	var monthTable =
+		['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+		 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+
+	return localRuntime.Native.Date.values = {
+		read: readDate,
+		year: function(d) { return d.getFullYear(); },
+		month: function(d) { return { ctor: monthTable[d.getMonth()] }; },
+		day: function(d) { return d.getDate(); },
+		hour: function(d) { return d.getHours(); },
+		minute: function(d) { return d.getMinutes(); },
+		second: function(d) { return d.getSeconds(); },
+		millisecond: function(d) { return d.getMilliseconds(); },
+		toTime: function(d) { return d.getTime(); },
+		fromTime: function(t) { return new Date(t); },
+		dayOfWeek: function(d) { return { ctor: dayTable[d.getDay()] }; }
+	};
+};
+
 Elm.Native.Signal = {};
 
 Elm.Native.Signal.make = function(localRuntime) {
@@ -6673,6 +6713,76 @@ Elm.Time.make = function (_elm) {
                              ,delay: delay
                              ,since: since};
 };
+Elm.Date = Elm.Date || {};
+Elm.Date.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   if (_elm.Date.values) return _elm.Date.values;
+   var _U = Elm.Native.Utils.make(_elm),$Native$Date = Elm.Native.Date.make(_elm),$Result = Elm.Result.make(_elm),$Time = Elm.Time.make(_elm);
+   var _op = {};
+   var millisecond = $Native$Date.millisecond;
+   var second = $Native$Date.second;
+   var minute = $Native$Date.minute;
+   var hour = $Native$Date.hour;
+   var dayOfWeek = $Native$Date.dayOfWeek;
+   var day = $Native$Date.day;
+   var month = $Native$Date.month;
+   var year = $Native$Date.year;
+   var fromTime = $Native$Date.fromTime;
+   var toTime = $Native$Date.toTime;
+   var fromString = $Native$Date.read;
+   var Dec = {ctor: "Dec"};
+   var Nov = {ctor: "Nov"};
+   var Oct = {ctor: "Oct"};
+   var Sep = {ctor: "Sep"};
+   var Aug = {ctor: "Aug"};
+   var Jul = {ctor: "Jul"};
+   var Jun = {ctor: "Jun"};
+   var May = {ctor: "May"};
+   var Apr = {ctor: "Apr"};
+   var Mar = {ctor: "Mar"};
+   var Feb = {ctor: "Feb"};
+   var Jan = {ctor: "Jan"};
+   var Sun = {ctor: "Sun"};
+   var Sat = {ctor: "Sat"};
+   var Fri = {ctor: "Fri"};
+   var Thu = {ctor: "Thu"};
+   var Wed = {ctor: "Wed"};
+   var Tue = {ctor: "Tue"};
+   var Mon = {ctor: "Mon"};
+   var Date = {ctor: "Date"};
+   return _elm.Date.values = {_op: _op
+                             ,fromString: fromString
+                             ,toTime: toTime
+                             ,fromTime: fromTime
+                             ,year: year
+                             ,month: month
+                             ,day: day
+                             ,dayOfWeek: dayOfWeek
+                             ,hour: hour
+                             ,minute: minute
+                             ,second: second
+                             ,millisecond: millisecond
+                             ,Jan: Jan
+                             ,Feb: Feb
+                             ,Mar: Mar
+                             ,Apr: Apr
+                             ,May: May
+                             ,Jun: Jun
+                             ,Jul: Jul
+                             ,Aug: Aug
+                             ,Sep: Sep
+                             ,Oct: Oct
+                             ,Nov: Nov
+                             ,Dec: Dec
+                             ,Mon: Mon
+                             ,Tue: Tue
+                             ,Wed: Wed
+                             ,Thu: Thu
+                             ,Fri: Fri
+                             ,Sat: Sat
+                             ,Sun: Sun};
+};
 Elm.Native.String = {};
 
 Elm.Native.String.make = function(localRuntime) {
@@ -8284,6 +8394,165 @@ Elm.Json.Decode.make = function (_elm) {
                                     ,andThen: andThen
                                     ,value: value
                                     ,customDecoder: customDecoder};
+};
+Elm.Native.Regex = {};
+Elm.Native.Regex.make = function(localRuntime) {
+	localRuntime.Native = localRuntime.Native || {};
+	localRuntime.Native.Regex = localRuntime.Native.Regex || {};
+	if (localRuntime.Native.Regex.values)
+	{
+		return localRuntime.Native.Regex.values;
+	}
+	if ('values' in Elm.Native.Regex)
+	{
+		return localRuntime.Native.Regex.values = Elm.Native.Regex.values;
+	}
+
+	var List = Elm.Native.List.make(localRuntime);
+	var Maybe = Elm.Maybe.make(localRuntime);
+
+	function escape(str)
+	{
+		return str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+	function caseInsensitive(re)
+	{
+		return new RegExp(re.source, 'gi');
+	}
+	function regex(raw)
+	{
+		return new RegExp(raw, 'g');
+	}
+
+	function contains(re, string)
+	{
+		return string.match(re) !== null;
+	}
+
+	function find(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var out = [];
+		var number = 0;
+		var string = str;
+		var lastIndex = re.lastIndex;
+		var prevLastIndex = -1;
+		var result;
+		while (number++ < n && (result = re.exec(string)))
+		{
+			if (prevLastIndex === re.lastIndex) break;
+			var i = result.length - 1;
+			var subs = new Array(i);
+			while (i > 0)
+			{
+				var submatch = result[i];
+				subs[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			out.push({
+				match: result[0],
+				submatches: List.fromArray(subs),
+				index: result.index,
+				number: number
+			});
+			prevLastIndex = re.lastIndex;
+		}
+		re.lastIndex = lastIndex;
+		return List.fromArray(out);
+	}
+
+	function replace(n, re, replacer, string)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		var count = 0;
+		function jsReplacer(match)
+		{
+			if (count++ >= n)
+			{
+				return match;
+			}
+			var i = arguments.length - 3;
+			var submatches = new Array(i);
+			while (i > 0)
+			{
+				var submatch = arguments[i];
+				submatches[--i] = submatch === undefined
+					? Maybe.Nothing
+					: Maybe.Just(submatch);
+			}
+			return replacer({
+				match: match,
+				submatches: List.fromArray(submatches),
+				index: arguments[i - 1],
+				number: count
+			});
+		}
+		return string.replace(re, jsReplacer);
+	}
+
+	function split(n, re, str)
+	{
+		n = n.ctor === 'All' ? Infinity : n._0;
+		if (n === Infinity)
+		{
+			return List.fromArray(str.split(re));
+		}
+		var string = str;
+		var result;
+		var out = [];
+		var start = re.lastIndex;
+		while (n--)
+		{
+			if (!(result = re.exec(string))) break;
+			out.push(string.slice(start, result.index));
+			start = re.lastIndex;
+		}
+		out.push(string.slice(start));
+		return List.fromArray(out);
+	}
+
+	return Elm.Native.Regex.values = {
+		regex: regex,
+		caseInsensitive: caseInsensitive,
+		escape: escape,
+
+		contains: F2(contains),
+		find: F3(find),
+		replace: F4(replace),
+		split: F3(split)
+	};
+};
+
+Elm.Regex = Elm.Regex || {};
+Elm.Regex.make = function (_elm) {
+   "use strict";
+   _elm.Regex = _elm.Regex || {};
+   if (_elm.Regex.values) return _elm.Regex.values;
+   var _U = Elm.Native.Utils.make(_elm),$Maybe = Elm.Maybe.make(_elm),$Native$Regex = Elm.Native.Regex.make(_elm);
+   var _op = {};
+   var split = $Native$Regex.split;
+   var replace = $Native$Regex.replace;
+   var find = $Native$Regex.find;
+   var AtMost = function (a) {    return {ctor: "AtMost",_0: a};};
+   var All = {ctor: "All"};
+   var Match = F4(function (a,b,c,d) {    return {match: a,submatches: b,index: c,number: d};});
+   var contains = $Native$Regex.contains;
+   var caseInsensitive = $Native$Regex.caseInsensitive;
+   var regex = $Native$Regex.regex;
+   var escape = $Native$Regex.escape;
+   var Regex = {ctor: "Regex"};
+   return _elm.Regex.values = {_op: _op
+                              ,regex: regex
+                              ,escape: escape
+                              ,caseInsensitive: caseInsensitive
+                              ,contains: contains
+                              ,find: find
+                              ,replace: replace
+                              ,split: split
+                              ,Match: Match
+                              ,All: All
+                              ,AtMost: AtMost};
 };
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 
@@ -10151,6 +10420,328 @@ Elm.Html.make = function (_elm) {
                              ,menuitem: menuitem
                              ,menu: menu};
 };
+Elm.Html = Elm.Html || {};
+Elm.Html.Attributes = Elm.Html.Attributes || {};
+Elm.Html.Attributes.make = function (_elm) {
+   "use strict";
+   _elm.Html = _elm.Html || {};
+   _elm.Html.Attributes = _elm.Html.Attributes || {};
+   if (_elm.Html.Attributes.values) return _elm.Html.Attributes.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $Html = Elm.Html.make(_elm),
+   $Json$Encode = Elm.Json.Encode.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm),
+   $VirtualDom = Elm.VirtualDom.make(_elm);
+   var _op = {};
+   var attribute = $VirtualDom.attribute;
+   var contextmenu = function (value) {    return A2(attribute,"contextmenu",value);};
+   var property = $VirtualDom.property;
+   var stringProperty = F2(function (name,string) {    return A2(property,name,$Json$Encode.string(string));});
+   var $class = function (name) {    return A2(stringProperty,"className",name);};
+   var id = function (name) {    return A2(stringProperty,"id",name);};
+   var title = function (name) {    return A2(stringProperty,"title",name);};
+   var accesskey = function ($char) {    return A2(stringProperty,"accessKey",$String.fromChar($char));};
+   var dir = function (value) {    return A2(stringProperty,"dir",value);};
+   var draggable = function (value) {    return A2(stringProperty,"draggable",value);};
+   var dropzone = function (value) {    return A2(stringProperty,"dropzone",value);};
+   var itemprop = function (value) {    return A2(stringProperty,"itemprop",value);};
+   var lang = function (value) {    return A2(stringProperty,"lang",value);};
+   var tabindex = function (n) {    return A2(stringProperty,"tabIndex",$Basics.toString(n));};
+   var charset = function (value) {    return A2(stringProperty,"charset",value);};
+   var content = function (value) {    return A2(stringProperty,"content",value);};
+   var httpEquiv = function (value) {    return A2(stringProperty,"httpEquiv",value);};
+   var language = function (value) {    return A2(stringProperty,"language",value);};
+   var src = function (value) {    return A2(stringProperty,"src",value);};
+   var height = function (value) {    return A2(stringProperty,"height",$Basics.toString(value));};
+   var width = function (value) {    return A2(stringProperty,"width",$Basics.toString(value));};
+   var alt = function (value) {    return A2(stringProperty,"alt",value);};
+   var preload = function (value) {    return A2(stringProperty,"preload",value);};
+   var poster = function (value) {    return A2(stringProperty,"poster",value);};
+   var kind = function (value) {    return A2(stringProperty,"kind",value);};
+   var srclang = function (value) {    return A2(stringProperty,"srclang",value);};
+   var sandbox = function (value) {    return A2(stringProperty,"sandbox",value);};
+   var srcdoc = function (value) {    return A2(stringProperty,"srcdoc",value);};
+   var type$ = function (value) {    return A2(stringProperty,"type",value);};
+   var value = function (value) {    return A2(stringProperty,"value",value);};
+   var placeholder = function (value) {    return A2(stringProperty,"placeholder",value);};
+   var accept = function (value) {    return A2(stringProperty,"accept",value);};
+   var acceptCharset = function (value) {    return A2(stringProperty,"acceptCharset",value);};
+   var action = function (value) {    return A2(stringProperty,"action",value);};
+   var autocomplete = function (bool) {    return A2(stringProperty,"autocomplete",bool ? "on" : "off");};
+   var autosave = function (value) {    return A2(stringProperty,"autosave",value);};
+   var enctype = function (value) {    return A2(stringProperty,"enctype",value);};
+   var formaction = function (value) {    return A2(stringProperty,"formAction",value);};
+   var list = function (value) {    return A2(stringProperty,"list",value);};
+   var minlength = function (n) {    return A2(stringProperty,"minLength",$Basics.toString(n));};
+   var maxlength = function (n) {    return A2(stringProperty,"maxLength",$Basics.toString(n));};
+   var method = function (value) {    return A2(stringProperty,"method",value);};
+   var name = function (value) {    return A2(stringProperty,"name",value);};
+   var pattern = function (value) {    return A2(stringProperty,"pattern",value);};
+   var size = function (n) {    return A2(stringProperty,"size",$Basics.toString(n));};
+   var $for = function (value) {    return A2(stringProperty,"htmlFor",value);};
+   var form = function (value) {    return A2(stringProperty,"form",value);};
+   var max = function (value) {    return A2(stringProperty,"max",value);};
+   var min = function (value) {    return A2(stringProperty,"min",value);};
+   var step = function (n) {    return A2(stringProperty,"step",n);};
+   var cols = function (n) {    return A2(stringProperty,"cols",$Basics.toString(n));};
+   var rows = function (n) {    return A2(stringProperty,"rows",$Basics.toString(n));};
+   var wrap = function (value) {    return A2(stringProperty,"wrap",value);};
+   var usemap = function (value) {    return A2(stringProperty,"useMap",value);};
+   var shape = function (value) {    return A2(stringProperty,"shape",value);};
+   var coords = function (value) {    return A2(stringProperty,"coords",value);};
+   var challenge = function (value) {    return A2(stringProperty,"challenge",value);};
+   var keytype = function (value) {    return A2(stringProperty,"keytype",value);};
+   var align = function (value) {    return A2(stringProperty,"align",value);};
+   var cite = function (value) {    return A2(stringProperty,"cite",value);};
+   var href = function (value) {    return A2(stringProperty,"href",value);};
+   var target = function (value) {    return A2(stringProperty,"target",value);};
+   var downloadAs = function (value) {    return A2(stringProperty,"download",value);};
+   var hreflang = function (value) {    return A2(stringProperty,"hreflang",value);};
+   var media = function (value) {    return A2(stringProperty,"media",value);};
+   var ping = function (value) {    return A2(stringProperty,"ping",value);};
+   var rel = function (value) {    return A2(stringProperty,"rel",value);};
+   var datetime = function (value) {    return A2(stringProperty,"datetime",value);};
+   var pubdate = function (value) {    return A2(stringProperty,"pubdate",value);};
+   var start = function (n) {    return A2(stringProperty,"start",$Basics.toString(n));};
+   var colspan = function (n) {    return A2(stringProperty,"colSpan",$Basics.toString(n));};
+   var headers = function (value) {    return A2(stringProperty,"headers",value);};
+   var rowspan = function (n) {    return A2(stringProperty,"rowSpan",$Basics.toString(n));};
+   var scope = function (value) {    return A2(stringProperty,"scope",value);};
+   var manifest = function (value) {    return A2(stringProperty,"manifest",value);};
+   var boolProperty = F2(function (name,bool) {    return A2(property,name,$Json$Encode.bool(bool));});
+   var hidden = function (bool) {    return A2(boolProperty,"hidden",bool);};
+   var contenteditable = function (bool) {    return A2(boolProperty,"contentEditable",bool);};
+   var spellcheck = function (bool) {    return A2(boolProperty,"spellcheck",bool);};
+   var async = function (bool) {    return A2(boolProperty,"async",bool);};
+   var defer = function (bool) {    return A2(boolProperty,"defer",bool);};
+   var scoped = function (bool) {    return A2(boolProperty,"scoped",bool);};
+   var autoplay = function (bool) {    return A2(boolProperty,"autoplay",bool);};
+   var controls = function (bool) {    return A2(boolProperty,"controls",bool);};
+   var loop = function (bool) {    return A2(boolProperty,"loop",bool);};
+   var $default = function (bool) {    return A2(boolProperty,"default",bool);};
+   var seamless = function (bool) {    return A2(boolProperty,"seamless",bool);};
+   var checked = function (bool) {    return A2(boolProperty,"checked",bool);};
+   var selected = function (bool) {    return A2(boolProperty,"selected",bool);};
+   var autofocus = function (bool) {    return A2(boolProperty,"autofocus",bool);};
+   var disabled = function (bool) {    return A2(boolProperty,"disabled",bool);};
+   var multiple = function (bool) {    return A2(boolProperty,"multiple",bool);};
+   var novalidate = function (bool) {    return A2(boolProperty,"noValidate",bool);};
+   var readonly = function (bool) {    return A2(boolProperty,"readOnly",bool);};
+   var required = function (bool) {    return A2(boolProperty,"required",bool);};
+   var ismap = function (value) {    return A2(boolProperty,"isMap",value);};
+   var download = function (bool) {    return A2(boolProperty,"download",bool);};
+   var reversed = function (bool) {    return A2(boolProperty,"reversed",bool);};
+   var classList = function (list) {    return $class(A2($String.join," ",A2($List.map,$Basics.fst,A2($List.filter,$Basics.snd,list))));};
+   var style = function (props) {
+      return A2(property,
+      "style",
+      $Json$Encode.object(A2($List.map,function (_p0) {    var _p1 = _p0;return {ctor: "_Tuple2",_0: _p1._0,_1: $Json$Encode.string(_p1._1)};},props)));
+   };
+   var key = function (k) {    return A2(stringProperty,"key",k);};
+   return _elm.Html.Attributes.values = {_op: _op
+                                        ,key: key
+                                        ,style: style
+                                        ,$class: $class
+                                        ,classList: classList
+                                        ,id: id
+                                        ,title: title
+                                        ,hidden: hidden
+                                        ,type$: type$
+                                        ,value: value
+                                        ,checked: checked
+                                        ,placeholder: placeholder
+                                        ,selected: selected
+                                        ,accept: accept
+                                        ,acceptCharset: acceptCharset
+                                        ,action: action
+                                        ,autocomplete: autocomplete
+                                        ,autofocus: autofocus
+                                        ,autosave: autosave
+                                        ,disabled: disabled
+                                        ,enctype: enctype
+                                        ,formaction: formaction
+                                        ,list: list
+                                        ,maxlength: maxlength
+                                        ,minlength: minlength
+                                        ,method: method
+                                        ,multiple: multiple
+                                        ,name: name
+                                        ,novalidate: novalidate
+                                        ,pattern: pattern
+                                        ,readonly: readonly
+                                        ,required: required
+                                        ,size: size
+                                        ,$for: $for
+                                        ,form: form
+                                        ,max: max
+                                        ,min: min
+                                        ,step: step
+                                        ,cols: cols
+                                        ,rows: rows
+                                        ,wrap: wrap
+                                        ,href: href
+                                        ,target: target
+                                        ,download: download
+                                        ,downloadAs: downloadAs
+                                        ,hreflang: hreflang
+                                        ,media: media
+                                        ,ping: ping
+                                        ,rel: rel
+                                        ,ismap: ismap
+                                        ,usemap: usemap
+                                        ,shape: shape
+                                        ,coords: coords
+                                        ,src: src
+                                        ,height: height
+                                        ,width: width
+                                        ,alt: alt
+                                        ,autoplay: autoplay
+                                        ,controls: controls
+                                        ,loop: loop
+                                        ,preload: preload
+                                        ,poster: poster
+                                        ,$default: $default
+                                        ,kind: kind
+                                        ,srclang: srclang
+                                        ,sandbox: sandbox
+                                        ,seamless: seamless
+                                        ,srcdoc: srcdoc
+                                        ,reversed: reversed
+                                        ,start: start
+                                        ,align: align
+                                        ,colspan: colspan
+                                        ,rowspan: rowspan
+                                        ,headers: headers
+                                        ,scope: scope
+                                        ,async: async
+                                        ,charset: charset
+                                        ,content: content
+                                        ,defer: defer
+                                        ,httpEquiv: httpEquiv
+                                        ,language: language
+                                        ,scoped: scoped
+                                        ,accesskey: accesskey
+                                        ,contenteditable: contenteditable
+                                        ,contextmenu: contextmenu
+                                        ,dir: dir
+                                        ,draggable: draggable
+                                        ,dropzone: dropzone
+                                        ,itemprop: itemprop
+                                        ,lang: lang
+                                        ,spellcheck: spellcheck
+                                        ,tabindex: tabindex
+                                        ,challenge: challenge
+                                        ,keytype: keytype
+                                        ,cite: cite
+                                        ,datetime: datetime
+                                        ,pubdate: pubdate
+                                        ,manifest: manifest
+                                        ,property: property
+                                        ,attribute: attribute};
+};
+Elm.Date = Elm.Date || {};
+Elm.Date.Format = Elm.Date.Format || {};
+Elm.Date.Format.make = function (_elm) {
+   "use strict";
+   _elm.Date = _elm.Date || {};
+   _elm.Date.Format = _elm.Date.Format || {};
+   if (_elm.Date.Format.values) return _elm.Date.Format.values;
+   var _U = Elm.Native.Utils.make(_elm),
+   $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Debug = Elm.Debug.make(_elm),
+   $List = Elm.List.make(_elm),
+   $Maybe = Elm.Maybe.make(_elm),
+   $Regex = Elm.Regex.make(_elm),
+   $Result = Elm.Result.make(_elm),
+   $Signal = Elm.Signal.make(_elm),
+   $String = Elm.String.make(_elm);
+   var _op = {};
+   var padWith = function (c) {    return function (_p0) {    return A3($String.padLeft,2,c,$Basics.toString(_p0));};};
+   var zero2twelve = function (n) {    return _U.eq(n,0) ? 12 : n;};
+   var mod12 = function (h) {    return A2($Basics._op["%"],h,12);};
+   var fullDayOfWeek = function (dow) {
+      var _p1 = dow;
+      switch (_p1.ctor)
+      {case "Mon": return "Monday";
+         case "Tue": return "Tuesday";
+         case "Wed": return "Wednesday";
+         case "Thu": return "Thursday";
+         case "Fri": return "Friday";
+         case "Sat": return "Saturday";
+         default: return "Sunday";}
+   };
+   var monthToFullName = function (m) {
+      var _p2 = m;
+      switch (_p2.ctor)
+      {case "Jan": return "January";
+         case "Feb": return "February";
+         case "Mar": return "March";
+         case "Apr": return "April";
+         case "May": return "May";
+         case "Jun": return "June";
+         case "Jul": return "July";
+         case "Aug": return "August";
+         case "Sep": return "September";
+         case "Oct": return "October";
+         case "Nov": return "November";
+         default: return "December";}
+   };
+   var monthToInt = function (m) {
+      var _p3 = m;
+      switch (_p3.ctor)
+      {case "Jan": return 1;
+         case "Feb": return 2;
+         case "Mar": return 3;
+         case "Apr": return 4;
+         case "May": return 5;
+         case "Jun": return 6;
+         case "Jul": return 7;
+         case "Aug": return 8;
+         case "Sep": return 9;
+         case "Oct": return 10;
+         case "Nov": return 11;
+         default: return 12;}
+   };
+   var collapse = function (m) {    return A2($Maybe.andThen,m,$Basics.identity);};
+   var formatToken = F2(function (d,m) {
+      var symbol = A2($Maybe.withDefault," ",collapse(A2($Maybe.andThen,$List.tail(m.submatches),$List.head)));
+      var prefix = A2($Maybe.withDefault," ",collapse($List.head(m.submatches)));
+      return A2($Basics._op["++"],
+      prefix,
+      function () {
+         var _p4 = symbol;
+         switch (_p4)
+         {case "Y": return $Basics.toString($Date.year(d));
+            case "m": return A3($String.padLeft,2,_U.chr("0"),$Basics.toString(monthToInt($Date.month(d))));
+            case "B": return monthToFullName($Date.month(d));
+            case "b": return $Basics.toString($Date.month(d));
+            case "d": return A2(padWith,_U.chr("0"),$Date.day(d));
+            case "e": return A2(padWith,_U.chr(" "),$Date.day(d));
+            case "a": return $Basics.toString($Date.dayOfWeek(d));
+            case "A": return fullDayOfWeek($Date.dayOfWeek(d));
+            case "H": return A2(padWith,_U.chr("0"),$Date.hour(d));
+            case "k": return A2(padWith,_U.chr(" "),$Date.hour(d));
+            case "I": return A2(padWith,_U.chr("0"),zero2twelve(mod12($Date.hour(d))));
+            case "l": return A2(padWith,_U.chr(" "),zero2twelve(mod12($Date.hour(d))));
+            case "p": return _U.cmp($Date.hour(d),13) < 0 ? "AM" : "PM";
+            case "P": return _U.cmp($Date.hour(d),13) < 0 ? "am" : "pm";
+            case "M": return A2(padWith,_U.chr("0"),$Date.minute(d));
+            case "S": return A2(padWith,_U.chr("0"),$Date.second(d));
+            default: return "";}
+      }());
+   });
+   var re = $Regex.regex("(^|[^%])%(Y|m|B|b|d|e|a|A|H|k|I|l|p|P|M|S)");
+   var format = F2(function (s,d) {    return A4($Regex.replace,$Regex.All,re,formatToken(d),s);});
+   var formatISO8601 = format("%Y-%m-%dT%H:%M:%SZ");
+   return _elm.Date.Format.values = {_op: _op,format: format,formatISO8601: formatISO8601};
+};
 Elm.Native.SocketIO = {};
 Elm.Native.SocketIO.make = function(localRuntime) {
 
@@ -10265,16 +10856,21 @@ Elm.Main.make = function (_elm) {
    _elm.Main = _elm.Main || {};
    if (_elm.Main.values) return _elm.Main.values;
    var _U = Elm.Native.Utils.make(_elm),
+   $Array = Elm.Array.make(_elm),
    $Basics = Elm.Basics.make(_elm),
+   $Date = Elm.Date.make(_elm),
+   $Date$Format = Elm.Date.Format.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Dict = Elm.Dict.make(_elm),
    $Html = Elm.Html.make(_elm),
+   $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Json$Decode = Elm.Json.Decode.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
    $SocketIO = Elm.SocketIO.make(_elm),
+   $String = Elm.String.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
    var log = function (r) {    var _p0 = r;if (_p0.ctor === "Ok") {    return r;} else {    return A2($Debug.log,_p0._0,r);}};
@@ -10286,112 +10882,165 @@ Elm.Main.make = function (_elm) {
    var Update = function (a) {    return {ctor: "Update",_0: a};};
    var NoOp = {ctor: "NoOp"};
    var actions = $Signal.mailbox(NoOp);
-   var moneyLineRow = function (row) {
-      var showOdd = function (odd) {
-         var _p1 = odd;
-         if (_p1.ctor === "MoneyLine") {
-               var _p2 = _p1._0;
-               return $Maybe.Just(A2($Html.tr,
-               _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddA)])),A2($Html.td,_U.list([]),_U.list([$Html.text(_p2.oddB)]))])));
-            } else {
-               return $Maybe.Nothing;
-            }
-      };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   var translateTeamName = function (raw) {
+      var last = function (array) {    return A2($Array.get,$Array.length(array) - 1,array);};
+      var key = last($Array.fromList(A2($String.split," ",$String.toLower(raw))));
+      var _p1 = key;
+      if (_p1.ctor === "Nothing") {
+            return "Unknown";
+         } else {
+            var _p2 = _p1._0;
+            switch (_p2)
+            {case "76ers": return "76人";
+               case "blazers": return "拓荒者";
+               case "bucks": return "公鹿";
+               case "bulls": return "公牛";
+               case "cavaliers": return "騎士";
+               case "celtics": return "塞爾提克";
+               case "clippers": return "快艇";
+               case "grizzlies": return "灰熊";
+               case "hawks": return "老鷹";
+               case "heat": return "熱火";
+               case "hornets": return "黃蜂";
+               case "jazz": return "爵士";
+               case "kings": return "國王";
+               case "knicks": return "尼克";
+               case "lakers": return "湖人";
+               case "magic": return "魔術";
+               case "mavericks": return "小牛";
+               case "nets": return "籃網";
+               case "nuggets": return "金塊";
+               case "pacers": return "溜馬";
+               case "pelicans": return "鵜鶘";
+               case "pistons": return "活塞";
+               case "raptors": return "暴龍";
+               case "rockets": return "火箭";
+               case "spurs": return "馬刺";
+               case "suns": return "太陽";
+               case "thunder": return "雷霆";
+               case "timberwolves": return "灰狼";
+               case "warriors": return "勇士";
+               case "wizards": return "巫師";
+               default: return "不知道";}
+         }
    };
-   var spreadRow = function (row) {
-      var showOdd = function (odd) {
-         var _p3 = odd;
-         if (_p3.ctor === "Spread") {
-               var _p4 = _p3._0;
-               return $Maybe.Just(A2($Html.tr,
-               _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreA))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p4.scoreB))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddA)]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p4.oddB)]))])));
-            } else {
-               return $Maybe.Nothing;
-            }
-      };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+   var translateSource = function (source) {
+      var _p3 = source;
+      switch (_p3)
+      {case "twsport": return "台彩";
+         case "bet365": return "國際";
+         default: return "Unknown";}
+   };
+   var formatDate = function (orig) {
+      var _p4 = $Date.fromString(orig);
+      if (_p4.ctor === "Ok") {
+            return $Maybe.Just(A2($Date$Format.format,"%Y/%m/%d %H:%M",_p4._0));
+         } else {
+            return A2($Debug.log,_p4._0,$Maybe.Nothing);
+         }
+   };
+   var competitionInfo = function (row) {
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("competition-info")]),
+      _U.list([A2($Html.span,_U.list([$Html$Attributes.$class("team-name")]),_U.list([$Html.text(translateTeamName(row.teamA))]))
+              ,A2($Html.span,_U.list([$Html$Attributes.$class("vs")]),_U.list([$Html.text("v.s.")]))
+              ,A2($Html.span,_U.list([$Html$Attributes.$class("team-name")]),_U.list([$Html.text(translateTeamName(row.teamB))]))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("time")]),
+              _U.list([$Html.text(function () {    var _p5 = formatDate(row.time);if (_p5.ctor === "Just") {    return _p5._0;} else {    return "";}}())]))]));
    };
    var totalRow = function (row) {
-      var showOdd = function (odd) {
-         var _p5 = odd;
-         if (_p5.ctor === "Total") {
-               var _p6 = _p5._0;
-               return $Maybe.Just(A2($Html.tr,
+      var showOdd = function (_p6) {
+         var _p7 = _p6;
+         var _p8 = _p7._1;
+         if (_p8.ctor === "Total") {
+               var _p9 = _p8._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
                _U.list([]),
-               _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text($Basics.toString(_p6.score))]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddUnder)]))
-                       ,A2($Html.td,_U.list([]),_U.list([$Html.text(_p6.oddOver)]))])));
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p7._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.score),A2($Html.span,_U.list([]),_U.list([$Html.text("總分")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddOver),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddUnder),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))]))])));
             } else {
                return $Maybe.Nothing;
             }
       };
-      return A2($Html.tr,
-      _U.list([]),
-      _U.list([A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamA)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.teamB)]))
-              ,A2($Html.td,_U.list([]),_U.list([$Html.text(row.time)]))
-              ,A2($Html.td,_U.list([]),A2($List.filterMap,showOdd,$Dict.values(row.odds)))]));
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
+   };
+   var spreadRow = function (row) {
+      var showOdd = function (_p10) {
+         var _p11 = _p10;
+         var _p12 = _p11._1;
+         if (_p12.ctor === "Spread") {
+               var _p13 = _p12._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
+               _U.list([]),
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p11._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p13.scoreA,A2($Basics._op["++"],"/",_p13.scoreB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("讓分")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p13.oddA,A2($Basics._op["++"],"/",_p13.oddB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("賠率")]))]))]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
+   };
+   var moneyLineRow = function (row) {
+      var showOdd = function (_p14) {
+         var _p15 = _p14;
+         var _p16 = _p15._1;
+         if (_p16.ctor === "MoneyLine") {
+               var _p17 = _p16._0;
+               return $Maybe.Just(A2($Html.div,
+               _U.list([$Html$Attributes.$class("stats")]),
+               _U.list([A2($Html.ul,
+               _U.list([]),
+               _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p15._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
+                       ,A2($Html.li,
+                       _U.list([]),
+                       _U.list([$Html.text(A2($Basics._op["++"],_p17.oddA,A2($Basics._op["++"],"/",_p17.oddB)))
+                               ,A2($Html.span,_U.list([]),_U.list([$Html.text("賠率")]))]))]))])));
+            } else {
+               return $Maybe.Nothing;
+            }
+      };
+      return A2($Html.div,
+      _U.list([$Html$Attributes.$class("row")]),
+      _U.list([competitionInfo(row),A2($Html.div,_U.list([$Html$Attributes.$class("odd")]),A2($List.filterMap,showOdd,$Dict.toList(row.odds)))]));
    };
    var view = F2(function (address,model) {
       return A2($Html.div,
-      _U.list([]),
-      _U.list([A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,totalRow,$Dict.values(model.total)))]))
-              ,A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,spreadRow,$Dict.values(model.spread)))]))
-              ,A2($Html.table,
-              _U.list([]),
-              _U.list([A2($Html.thead,
-                      _U.list([]),
-                      _U.list([A2($Html.tr,
-                      _U.list([]),
-                      _U.list([A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍A")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("隊伍B")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("時間")]))
-                              ,A2($Html.th,_U.list([]),_U.list([$Html.text("賠率")]))]))]))
-                      ,A2($Html.tbody,_U.list([]),A2($List.map,moneyLineRow,$Dict.values(model.moneyLine)))]))]));
+      _U.list([$Html$Attributes.$class("container")]),
+      _U.list([A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("大小分")])),A2($List.map,totalRow,$Dict.values(model.total))))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("讓分")])),A2($List.map,spreadRow,$Dict.values(model.spread))))
+              ,A2($Html.div,
+              _U.list([$Html$Attributes.$class("type")]),
+              A2($List._op["::"],A2($Html.h3,_U.list([]),_U.list([$Html.text("不讓分")])),A2($List.map,moneyLineRow,$Dict.values(model.moneyLine))))]));
    });
    var initialModel = {total: $Dict.empty,spread: $Dict.empty,moneyLine: $Dict.empty};
    var addBet = F2(function (bet,model) {
       var updateRow = function (dict) {
-         var _p7 = A2($Dict.get,bet.competitionToken,dict);
-         if (_p7.ctor === "Just") {
-               var _p8 = _p7._0;
-               return _U.update(_p8,{odds: A3($Dict.insert,bet.source,bet.odd,_p8.odds)});
+         var _p18 = A2($Dict.get,bet.competitionToken,dict);
+         if (_p18.ctor === "Just") {
+               var _p19 = _p18._0;
+               return _U.update(_p19,{odds: A3($Dict.insert,bet.source,bet.odd,_p19.odds)});
             } else {
                return {teamA: bet.teamA
                       ,teamB: bet.teamB
@@ -10403,14 +11052,14 @@ Elm.Main.make = function (_elm) {
                       ,competitionToken: bet.competitionToken};
             }
       };
-      var _p9 = bet.oddType;
-      switch (_p9)
+      var _p20 = bet.oddType;
+      switch (_p20)
       {case "total": return _U.update(model,{total: A3($Dict.insert,bet.competitionToken,updateRow(model.total),model.total)});
          case "spread": return _U.update(model,{spread: A3($Dict.insert,bet.competitionToken,updateRow(model.spread),model.spread)});
          case "money_line": return _U.update(model,{moneyLine: A3($Dict.insert,bet.competitionToken,updateRow(model.moneyLine),model.moneyLine)});
          default: return model;}
    });
-   var update = F2(function (action,model) {    var _p10 = action;if (_p10.ctor === "NoOp") {    return model;} else {    return A2(addBet,_p10._0,model);}});
+   var update = F2(function (action,model) {    var _p21 = action;if (_p21.ctor === "NoOp") {    return model;} else {    return A2(addBet,_p21._0,model);}});
    var Row = F8(function (a,b,c,d,e,f,g,h) {    return {competitionToken: a,teamA: b,teamB: c,time: d,league: e,region: f,sport: g,odds: h};});
    var Model = F3(function (a,b,c) {    return {total: a,spread: b,moneyLine: c};});
    var Unknown = {ctor: "Unknown"};
@@ -10422,8 +11071,8 @@ Elm.Main.make = function (_elm) {
    var SpreadOdd = F4(function (a,b,c,d) {    return {scoreA: a,scoreB: b,oddA: c,oddB: d};});
    var TotalOdd = F3(function (a,b,c) {    return {score: a,oddUnder: b,oddOver: c};});
    var oddDecoder = function (oddType) {
-      var _p11 = oddType;
-      switch (_p11)
+      var _p22 = oddType;
+      switch (_p22)
       {case "total": return A2($Json$Decode.map,
            Total,
            A4($Json$Decode.object3,
@@ -10488,7 +11137,7 @@ Elm.Main.make = function (_elm) {
    });
    var bets = A2($Signal.map,
    Update,
-   A3($Signal.filterMap,function (_p12) {    return $Result.toMaybe(log(A2($Json$Decode.decodeString,betDecoder,_p12)));},emptyBet,rawBets.signal));
+   A3($Signal.filterMap,function (_p23) {    return $Result.toMaybe(log(A2($Json$Decode.decodeString,betDecoder,_p23)));},emptyBet,rawBets.signal));
    var model = A3($Signal.foldp,update,initialModel,bets);
    var main = A2($Signal.map,view(actions.address),model);
    return _elm.Main.values = {_op: _op
@@ -10505,9 +11154,13 @@ Elm.Main.make = function (_elm) {
                              ,addBet: addBet
                              ,initialModel: initialModel
                              ,emptyBet: emptyBet
+                             ,formatDate: formatDate
+                             ,translateSource: translateSource
+                             ,translateTeamName: translateTeamName
                              ,totalRow: totalRow
                              ,spreadRow: spreadRow
                              ,moneyLineRow: moneyLineRow
+                             ,competitionInfo: competitionInfo
                              ,view: view
                              ,NoOp: NoOp
                              ,Update: Update
