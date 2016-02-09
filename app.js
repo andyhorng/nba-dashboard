@@ -31,8 +31,7 @@
       db: "dadog",
       host: "rethinkdb-driver"
     }).then(function(conn) {
-      r.table("bets").run(conn);
-      return r.db('dadog').table('bets').filter(r.row('time').gt(r.now())).group('competition_token').orderBy(r.desc(r.row('meta')('created_at'))).run(conn);
+      return r.db('dadog').table('bets').filter(r.row('time').gt(r.now())).group('competition_token').orderBy(r.asc(r.row('meta')('created_at'))).run(conn);
     }).then(function(groups) {
       return groups.each(function(err, group) {
         var bets;

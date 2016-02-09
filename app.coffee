@@ -19,12 +19,11 @@ app.get '/', (req, res) ->
 sendData = (socket) ->
     r.connect({db: "dadog", host: "rethinkdb-driver"})
         .then (conn) ->
-            r.table("bets").run(conn)
             r.db('dadog')
                 .table('bets')
                 .filter(r.row('time').gt(r.now()))
                 .group('competition_token')
-                .orderBy(r.desc(r.row('meta')('created_at'))).run(conn)
+                .orderBy(r.asc(r.row('meta')('created_at'))).run(conn)
         .then (groups) ->
             groups.each (err, group) ->
                 throw err if err
