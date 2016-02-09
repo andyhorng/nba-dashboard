@@ -18,7 +18,7 @@ python:
   links:
     - rethinkdb:rethinkdb-driver
 
-site:
+nbadashboard:
   build: .
   volumes: 
     - ./app.js:/usr/src/app/app.js

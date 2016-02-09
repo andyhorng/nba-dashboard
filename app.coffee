@@ -4,9 +4,12 @@ server = require('http').Server(app)
 io = require('socket.io')(server)
 nsq = require('nsqjs')
 r = require('rethinkdb')
+minify = require('express-minify')
+
 
 server.listen 8000
 
+app.use minify()
 app.use express.static('public')
 
 app.get '/', (req, res) ->
