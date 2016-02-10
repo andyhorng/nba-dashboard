@@ -110,7 +110,7 @@ Elm.Main.make = function (_elm) {
                _U.list([A2($Html.li,_U.list([]),_U.list([$Html.text(translateSource(_p7._0)),A2($Html.span,_U.list([]),_U.list([$Html.text("盤")]))]))
                        ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.score),A2($Html.span,_U.list([]),_U.list([$Html.text("總分")]))]))
                        ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddOver),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))
-                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddUnder),A2($Html.span,_U.list([]),_U.list([$Html.text("大於")]))]))]))])));
+                       ,A2($Html.li,_U.list([]),_U.list([$Html.text(_p9.oddUnder),A2($Html.span,_U.list([]),_U.list([$Html.text("小於")]))]))]))])));
             } else {
                return $Maybe.Nothing;
             }

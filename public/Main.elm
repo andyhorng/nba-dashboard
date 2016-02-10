@@ -237,7 +237,7 @@ totalRow row =
                   [ li [] [text <| translateSource source, span [] [text "盤"]]
                   , li [] [text data.score, span [] [(text "總分")]]
                   , li [] [text data.oddOver, span [] [(text "大於")]]
-                  , li [] [text data.oddUnder, span [] [(text "大於")]]
+                  , li [] [text data.oddUnder, span [] [(text "小於")]]
                   ]
                 ]
 
