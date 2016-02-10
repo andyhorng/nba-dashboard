@@ -147,7 +147,7 @@ $success-color: #e6efc2 !default;
         #F6C05C;
 
       @for $i from 1 to 7 { // assign colors from $flex-box-top-colors list
-        &:nth-child(#{$i+1}) {
+        &:nth-child(#{$i}n) {
           $color-from-list: nth($box-top-colors, $i);
           border-top: 6px solid $color-from-list;
 
@@ -164,7 +164,7 @@ $success-color: #e6efc2 !default;
       display: block;
       // margin: $box-gutter;
       margin-top: 1em;
-      padding: 2em 2em 3em 2em;
+      padding: 1em 1em 2em 1em;
 
       @include span-columns(4 of 4);
       @include media($tablet) {
