@@ -1,3 +1,4 @@
+@charset "UTF-8";
 button, input[type="button"], input[type="reset"], input[type="submit"] {
   appearance: none;
   background-color: #1565c0;
@@ -239,7 +240,7 @@ html {
   padding: 0.75em; }
   .stats ul {
     padding: 0; }
-  .stats li {
+  .stats > ul > li {
     border-right: 1px solid rgba(51, 51, 51, 0.2);
     color: #217ee7;
     display: inline;
@@ -247,19 +248,69 @@ html {
     font-size: 1.2em;
     line-height: 1.1em;
     padding: 0 0.7em; }
-    .stats li:first-child {
+    .stats > ul > li:first-child {
       padding-left: 0; }
-    .stats li:last-child {
+    .stats > ul > li:last-child {
       border-right: 0; }
-  .stats span {
-    color: #333;
-    display: block;
-    font-size: 0.7em;
-    font-weight: normal; }
-  .stats::after {
-    clear: both;
-    content: "";
-    display: table; }
+    .stats > ul > li > span {
+      color: #333;
+      display: block;
+      font-size: 0.7em;
+      font-weight: normal; }
+  .stats .tooltip-item {
+    display: inline-block;
+    position: relative; }
+    .stats .tooltip-item:focus, .stats .tooltip-item:hover .tooltip {
+      opacity: 1;
+      visibility: visible; }
+    .stats .tooltip-item .tooltip {
+      position: absolute;
+      right: 0;
+      bottom: 2em;
+      left: 0;
+      -webkit-transition: all 0.2s ease-in-out;
+      -moz-transition: all 0.2s ease-in-out;
+      transition: all 0.2s ease-in-out;
+      width: 10em;
+      left: -5em;
+      background-color: white;
+      background: #fff;
+      border-radius: 3px;
+      box-shadow: 0 2px 2px silver;
+      color: #333;
+      font-size: 0.9em;
+      line-height: 1.5em;
+      margin: 0 auto;
+      opacity: 0;
+      padding: 1em;
+      text-align: center;
+      visibility: hidden;
+      z-index: 10; }
+      .stats .tooltip-item .tooltip p {
+        color: #333;
+        line-height: 1.5;
+        margin: 0; }
+      .stats .tooltip-item .tooltip span {
+        display: inline;
+        white-space: nowrap;
+        margin: 0.2em;
+        color: #333;
+        font-size: 0.9em;
+        font-weight: normal; }
+      .stats .tooltip-item .tooltip span.num {
+        color: #217ee7; }
+      .stats .tooltip-item .tooltip:after {
+        position: absolute;
+        right: 0;
+        left: 0;
+        border: 12px solid transparent;
+        bottom: -1.3em;
+        color: white;
+        content: '▼';
+        font-size: 1.4em;
+        margin-left: -12px;
+        text-align: center;
+        text-shadow: 0 2px 2px silver; }
 
 .container {
   max-width: 68em;

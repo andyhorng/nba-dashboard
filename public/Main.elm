@@ -26,6 +26,7 @@ type alias Bet =
   , sport : String
   , source : String
   , competitionToken : String
+  , createdAt : String
   , odd : Odd
   }
 
@@ -33,6 +34,7 @@ type alias TotalOdd =
   { score : String
   , oddUnder : String
   , oddOver : String
+  , createdAt : String
   }
 
 type alias SpreadOdd =
@@ -40,11 +42,13 @@ type alias SpreadOdd =
   , scoreB : String
   , oddA : String
   , oddB : String
+  , createdAt : String
   }
 
 type alias MoneyLineOdd =
   { oddA : String
   , oddB : String
+  , createdAt : String
   }
 
 
@@ -57,15 +61,15 @@ type Odd
 
 type alias CompetitionToken = String
 type alias Model = {
-  total: Dict.Dict CompetitionToken Row,
-  spread : Dict.Dict CompetitionToken Row,
-  moneyLine : Dict.Dict CompetitionToken Row
+  total: Dict.Dict CompetitionToken Competition,
+  spread : Dict.Dict CompetitionToken Competition,
+  moneyLine : Dict.Dict CompetitionToken Competition
   }
 
 
--- Row Model 
+-- Competition Model 
 type alias Source = String
-type alias Row =
+type alias Competition =
   { competitionToken : CompetitionToken
   , teamA : String
   , teamB : String
@@ -73,7 +77,7 @@ type alias Row =
   , league : String
   , region : String
   , sport : String
-  , odds : Dict.Dict Source Odd
+  , odds : Dict.Dict Source (List Odd)
   }
 
 addBet : Bet -> Model -> Model
@@ -81,8 +85,14 @@ addBet bet model =
   let 
       updateRow dict = 
         case Dict.get bet.competitionToken dict of 
-          Just row ->
-            {row | odds = Dict.insert bet.source bet.odd row.odds}
+          Just competition ->
+            let oldOdds = Dict.get bet.source competition.odds
+            in case oldOdds of 
+              Just oldOdds' ->
+                {competition | odds = Dict.insert bet.source (oldOdds' ++ [bet.odd]) competition.odds}
+              Nothing ->
+                {competition | odds = Dict.insert bet.source [bet.odd] competition.odds}
+
           Nothing ->
             { teamA = bet.teamA
             , teamB = bet.teamB
@@ -90,7 +100,7 @@ addBet bet model =
             , league = bet.league
             , region = bet.region
             , sport = bet.sport
-            , odds = Dict.singleton bet.source bet.odd
+            , odds = Dict.singleton bet.source [bet.odd]
             , competitionToken = bet.competitionToken}
 
   in
@@ -121,6 +131,7 @@ emptyBet = {
   , sport = ""
   , source = ""
   , competitionToken = ""
+  , createdAt = ""
   , odd = Unknown}
 
 -- view
@@ -224,77 +235,117 @@ translateTeamName raw =
               "不知道"
 
 
-totalRow : Row -> Html
+
+historyView : String -> List (String, String) -> Html
+historyView current history = 
+  div [class "tooltip-item"] 
+    [ text current
+    , div [class "tooltip"]
+        [p [] 
+          [ ul [] <| List.map (\(date, data)-> li [] [span [] [text date], span [class "num"] [text data]]) history
+          ]
+        ]
+    ]
+
+
+totalRow : Competition -> Html
 totalRow row = 
   let 
-      showOdd : (String, Odd) -> Maybe Html
-      showOdd (source, odd) = 
-        case odd of 
+      mapper getter odd = 
+        case odd of
           Total data ->
-            Just <| 
-              div [class "stats"] 
-                [ ul [] 
-                  [ li [] [text <| translateSource source, span [] [text "盤"]]
-                  , li [] [text data.score, span [] [(text "總分")]]
-                  , li [] [text data.oddOver, span [] [(text "大於")]]
-                  , li [] [text data.oddUnder, span [] [(text "小於")]]
-                  ]
-                ]
-
+            formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
           _ ->
             Nothing
+
+      showOdd : (String, List Odd) -> Maybe Html
+      showOdd (source, odds) = 
+        let 
+            odd = List.head (List.reverse odds)
+        in
+           case odd of 
+              Just odd' ->
+                case odd' of 
+                  Total data ->
+                    Just <| 
+                      div [class "stats"] 
+                        [ ul [] 
+                          [ li [] [text <| translateSource source, span [] [text "盤"]]
+                          , li [] [historyView data.score (List.filterMap (mapper .score) odds), span [] [(text "總分")]]
+                          , li [] [text data.oddOver, span [] [(text "大於")]]
+                          , li [] [historyView data.oddOver (List.filterMap (mapper .oddOver) odds), span [] [(text "大於")]]
+                          , li [] [text data.oddUnder, span [] [(text "小於")]]
+                          , li [] [historyView data.oddUnder (List.filterMap (mapper .oddOver) odds), span [] [(text "小於")]]
+                          ]
+                        ]
+
+                  _ ->
+                    Nothing
+              Nothing ->
+                Nothing
+
+      sort = List.sortBy fst
   in
     div [class "row"] 
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-spreadRow : Row -> Html
+spreadRow : Competition -> Html
 spreadRow row = 
   let 
-      showOdd : (String, Odd) -> Maybe Html
-      showOdd (source, odd) = 
-        case odd of 
-          Spread data ->
-            Just <|
-              div [class "stats"] 
-                [ ul [] 
-                  [ li [] [text <| translateSource source, span [] [text "盤"]]
-                  , li [] [text (data.scoreA ++ "/" ++ data.scoreB), span [] [(text "讓分")]]
-                  , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
-                  ]
-                ]
-          _ ->
-            Nothing
+      showOdd : (String, List Odd) -> Maybe Html
+      showOdd (source, odds) = 
+        let 
+            odd = List.head (List.reverse odds)
+        in
+            case odd of 
+              Just odd' ->
+                case odd' of 
+                  Spread data ->
+                    Just <|
+                      div [class "stats"] 
+                        [ ul [] 
+                          [ li [] [text <| translateSource source, span [] [text "盤"]]
+                          , li [] [text (data.scoreA ++ "/" ++ data.scoreB), span [] [(text "讓分")]]
+                          , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+                          ]
+                        ]
+                  _ ->
+                    Nothing
+              _ ->
+                Nothing
   in
     div [class "row"] 
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-moneyLineRow : Row -> Html
+moneyLineRow : Competition -> Html
 moneyLineRow row = 
   let 
-      showOdd : (String, Odd) -> Maybe Html
-      showOdd (source, odd) = 
-        case odd of 
-          MoneyLine data ->
-            Just <| 
-              div [class "stats"] 
-                [ ul [] 
-                  [ li [] [text <| translateSource source, span [] [text "盤"]]
-                  , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+      showOdd : (String, List Odd) -> Maybe Html
+      showOdd (source, odds) = 
+        let odd = (List.head<<List.reverse) odds
+        in
+          case odd of 
+            Just (MoneyLine data) ->
+              Just <| 
+                div [class "stats"] 
+                  [ ul [] 
+                    [ li [] [text <| translateSource source, span [] [text "盤"]]
+                    , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+                    ]
                   ]
-                ]
-          _ ->
-            Nothing
+            _ ->
+              Nothing
   in
     div [class "row"] 
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-competitionInfo : Row -> Html
+competitionInfo : Competition -> Html
 competitionInfo row = 
   div [class "competition-info"]
     [ span [class "team-name"] [text <| translateTeamName row.teamA]
@@ -312,9 +363,9 @@ competitionInfo row =
 view : Address Action -> Model -> Html
 view address model = 
   div [class "container"] 
-    [ div [class "type"] <| (h3 [] [text "大小分"]) ::  List.map totalRow (Dict.values model.total) 
-    , div [class "type"] <| (h3 [] [text "讓分"]) ::  List.map spreadRow (Dict.values model.spread) 
-    , div [class "type"] <| (h3 [] [text "不讓分"]) ::  List.map moneyLineRow (Dict.values model.moneyLine) 
+    [ div [class "type"] <| (h3 [] [text "大小分"]) :: List.map totalRow (Dict.values model.total) 
+    , div [class "type"] <| (h3 [] [text "讓分"]) :: List.map spreadRow (Dict.values model.spread) 
+    , div [class "type"] <| (h3 [] [text "不讓分"]) :: List.map moneyLineRow (Dict.values model.moneyLine) 
     ]
 
 
@@ -352,43 +403,49 @@ rawBets = Signal.mailbox "null"
 port responses : Task x ()
 port responses = socket `Task.andThen` SocketIO.on "update" rawBets.address
 
-oddDecoder : String -> Decoder Odd
-oddDecoder oddType = 
-  case oddType of 
-    "total" ->
-      map Total
-      <| object3 TotalOdd
-        ("score" := string)
-        ("odd_under" := string)
-        ("odd_over" := string)
-    "spread" ->
-      map Spread
-      <| object4 SpreadOdd
-        ("score_a" := string)
-        ("score_b" := string)
-        ("odd_a" := string)
-        ("odd_b" := string)
-    "money_line" ->
-      map MoneyLine
-      <| object2 MoneyLineOdd
-        ("odd_a" := string)
-        ("odd_b" := string)
-    _ -> fail "Unknow odd type"
+oddDecoder : String -> String -> Decoder Odd
+oddDecoder oddType date = 
+    case oddType of 
+      "total" ->
+        map Total
+        <| object4 TotalOdd
+          ("score" := string)
+          ("odd_under" := string)
+          ("odd_over" := string)
+          (succeed date)
+      "spread" ->
+        map Spread
+        <| object5 SpreadOdd
+          ("score_a" := string)
+          ("score_b" := string)
+          ("odd_a" := string)
+          ("odd_b" := string)
+          (succeed date)
+      "money_line" ->
+        map MoneyLine
+        <| object3 MoneyLineOdd
+          ("odd_a" := string)
+          ("odd_b" := string)
+          (succeed date)
+      _ -> fail "Unknow odd type"
 
 betDecoder : Decoder Bet
 betDecoder =
   ("odd_type" := string) 
-  `andThen` \s -> (constructing Bet
-    `apply` ("odd_type" := string)
-    `apply` ("team_a" := string)
-    `apply` ("team_b" := string)
-    `apply` ("time" := string)
-    `apply` ("league" := string)
-    `apply` ("region" := string)
-    `apply` ("sport" := string)
-    `apply` ("source" := string)
-    `apply` ("competition_token" := string)
-    `apply` ("odd" := oddDecoder s))
+  `andThen` (\s -> 
+    (at ["meta", "created_at"] string)
+      `andThen` \date -> (constructing Bet
+        `apply` ("odd_type" := string)
+        `apply` ("team_a" := string)
+        `apply` ("team_b" := string)
+        `apply` ("time" := string)
+        `apply` ("league" := string)
+        `apply` ("region" := string)
+        `apply` ("sport" := string)
+        `apply` ("source" := string)
+        `apply` ("competition_token" := string)
+        `apply` (at ["meta", "created_at"] string)
+        `apply` ("odd" := oddDecoder s date)))
 
 log : Result String a -> Result String a
 log r = 
