@@ -303,7 +303,6 @@ html {
       margin: 0 auto;
       opacity: 0;
       padding: 1em;
-      text-align: center;
       visibility: hidden;
       z-index: 10; }
       .stats .tooltip-item .tooltip p {
