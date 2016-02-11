@@ -195,6 +195,9 @@ html {
     top: 34px;
     margin-bottom: 0.5em; }
 
+.ad {
+  margin-top: 1em; }
+
 .list {
   display: flex;
   justify-content: center;
