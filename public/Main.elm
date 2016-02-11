@@ -140,7 +140,11 @@ formatDate : String -> Maybe String
 formatDate orig = 
   case Date.fromString orig of 
     Ok date ->
-      Just <| Date.Format.format "%Y/%m/%d %H:%M" date
+      let 
+          -- hack...
+          twdate = Date.fromTime <| (Date.toTime date) + 8*60*60
+      in 
+          Just <| Date.Format.format "%Y/%m/%d %H:%M" twdate
     Err s ->
       Debug.log s
       Nothing
