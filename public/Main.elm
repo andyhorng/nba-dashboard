@@ -272,9 +272,7 @@ totalRow row =
                         [ ul [] 
                           [ li [] [text <| translateSource source, span [] [text "盤"]]
                           , li [] [historyView data.score (List.filterMap (mapper .score) odds), span [] [(text "總分")]]
-                          , li [] [text data.oddOver, span [] [(text "大於")]]
                           , li [] [historyView data.oddOver (List.filterMap (mapper .oddOver) odds), span [] [(text "大於")]]
-                          , li [] [text data.oddUnder, span [] [(text "小於")]]
                           , li [] [historyView data.oddUnder (List.filterMap (mapper .oddOver) odds), span [] [(text "小於")]]
                           ]
                         ]
@@ -297,9 +295,17 @@ spreadRow row =
       showOdd : (String, List Odd) -> Maybe Html
       showOdd (source, odds) = 
         let 
-            odd = List.head (List.reverse odds)
+            latest = List.head (List.reverse odds)
+            getter getter1 getter2 oddRecord = (getter1 oddRecord) ++ "/" ++ (getter2 oddRecord)
+
+            mapper getter odd = 
+              case odd of
+                Spread data ->
+                  formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
+                _ ->
+                  Nothing
         in
-            case odd of 
+            case latest of 
               Just odd' ->
                 case odd' of 
                   Spread data ->
@@ -307,8 +313,11 @@ spreadRow row =
                       div [class "stats"] 
                         [ ul [] 
                           [ li [] [text <| translateSource source, span [] [text "盤"]]
-                          , li [] [text (data.scoreA ++ "/" ++ data.scoreB), span [] [(text "讓分")]]
-                          , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
+                          , li [] [historyView (getter .scoreA .scoreB data) 
+                              (List.filterMap (mapper (getter .scoreA .scoreB)) odds), span [] [(text "讓分")]]
+
+                          , li [] [historyView (getter .oddA .oddB data) 
+                              (List.filterMap (mapper (getter .oddA .oddB)) odds), span [] [(text "賠率")]]
                           ]
                         ]
                   _ ->
@@ -321,24 +330,37 @@ spreadRow row =
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-moneyLineRow : Competition -> Html
 moneyLineRow row = 
   let 
       showOdd : (String, List Odd) -> Maybe Html
       showOdd (source, odds) = 
-        let odd = (List.head<<List.reverse) odds
+        let 
+            latest = List.head (List.reverse odds)
+            getter getter1 getter2 oddRecord = (getter1 oddRecord) ++ "/" ++ (getter2 oddRecord)
+
+            mapper getter odd = 
+              case odd of
+                MoneyLine data ->
+                  formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
+                _ ->
+                  Nothing
         in
-          case odd of 
-            Just (MoneyLine data) ->
-              Just <| 
-                div [class "stats"] 
-                  [ ul [] 
-                    [ li [] [text <| translateSource source, span [] [text "盤"]]
-                    , li [] [text (data.oddA ++ "/" ++ data.oddB), span [] [(text "賠率")]]
-                    ]
-                  ]
-            _ ->
-              Nothing
+            case latest of 
+              Just odd' ->
+                case odd' of 
+                  MoneyLine data ->
+                    Just <|
+                      div [class "stats"] 
+                        [ ul [] 
+                          [ li [] [text <| translateSource source, span [] [text "盤"]]
+                          , li [] [historyView (getter .oddA .oddB data) 
+                              (List.filterMap (mapper (getter .oddA .oddB)) odds), span [] [(text "賠率")]]
+                          ]
+                        ]
+                  _ ->
+                    Nothing
+              _ ->
+                Nothing
   in
     div [class "row"] 
       [ competitionInfo row
