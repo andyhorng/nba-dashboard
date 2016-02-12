@@ -43,6 +43,8 @@
           return socket.emit('update', bet);
         });
       });
+    })["catch"](function(err) {
+      return console.log(err);
     }).done();
   };
 

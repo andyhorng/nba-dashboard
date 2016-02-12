@@ -30,6 +30,8 @@ sendData = (socket) ->
                 bets = group['reduction']
                 bets.forEach (bet) ->
                     socket.emit 'update', bet
+        .catch (err) ->
+            console.log err
         .done()
 
 io.on 'connection', (socket) ->
