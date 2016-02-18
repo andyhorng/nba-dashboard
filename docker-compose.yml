@@ -6,7 +6,7 @@ nsqd:
     - "4151:4151"
 
 rethinkdb:
-  image: rethinkdb:1.16.1
+  image: rethinkdb
   ports:
     - "8080:8080"
     - "28015:28015"
@@ -28,5 +28,5 @@ nbadashboard:
   links:
     - rethinkdb:rethinkdb-driver
     - nsqd
-  environment:
-    DEBUG: '*:*'
+  # environment:
+    # DEBUG: '*:*'

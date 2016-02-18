@@ -22,6 +22,7 @@ sendData = (socket) ->
             r.db('dadog')
                 .table('bets')
                 .filter(r.row('time').gt(r.now()))
+                .filter(r.row('league').eq('NBA'))
                 .group('competition_token')
                 .orderBy(r.asc(r.row('meta')('created_at'))).run(conn)
         .then (groups) ->
@@ -44,7 +45,12 @@ io.on 'connection', (socket) ->
 
     reader.connect()
     reader.on 'message', (msg) ->
-        io.emit 'update', msg.json()
+        j = msg.json()
+        if j.league != 'nba'
+            msg.finish()
+            return
+
+        io.emit 'update', j
         msg.finish()
         return
     return
