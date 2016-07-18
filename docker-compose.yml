@@ -1,32 +1,29 @@
-nsqd:
-  image: nsqio/nsq
-  command: /nsqd
-  ports:
-    - "4150:4150"
-    - "4151:4151"
-
-rethinkdb:
-  image: rethinkdb
-  ports:
-    - "8080:8080"
-    - "28015:28015"
-
-python:
-  image: python:2
-  stdin_open: true
-  tty: true
-  links:
-    - rethinkdb:rethinkdb-driver
+# nsqd:
+#   image: nsqio/nsq
+#   command: /nsqd
+#   ports:
+#     - "4150:4150"
+#     - "4151:4151"
+#
+# rethinkdb:
+#   image: rethinkdb
+#   ports:
+#     - "8080:8080"
+#     - "28015:28015"
+#
+# python:
+#   image: python:2
+#   stdin_open: true
+#   tty: true
+#   links:
+#     - rethinkdb:rethinkdb-driver
 
 nbadashboard:
   build: .
-  volumes: 
+  volumes:
     - ./app.js:/usr/src/app/app.js
     - ./public:/usr/src/app/public
   ports:
     - "8000:8000"
-  links:
-    - rethinkdb:rethinkdb-driver
-    - nsqd
   # environment:
     # DEBUG: '*:*'
