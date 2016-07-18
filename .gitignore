@@ -1,2 +1,5 @@
 .sass-cache
 node_modules
+elm-stuff
+npm-debug.log
+.DS_Store
