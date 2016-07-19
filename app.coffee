@@ -1,11 +1,9 @@
 express = require('express')
 app = express()
 server = require('http').Server(app)
-io = require('socket.io')(server)
-nsq = require('nsqjs')
-r = require('rethinkdb')
+expressWs = require('express-ws')(app, server)
 minify = require('express-minify')
-
+fs = require('fs')
 
 server.listen 8000
 
@@ -16,41 +14,18 @@ app.get '/', (req, res) ->
     res.sendfile __dirname + '/index.html'
     return
 
-sendData = (socket) ->
-    r.connect({db: "dadog", host: "rethinkdb-driver"})
-        .then (conn) ->
-            r.db('dadog')
-                .table('bets')
-                .filter(r.row('time').gt(r.now()))
-                .filter(r.row('league').eq('NBA'))
-                .group('competition_token')
-                .orderBy(r.asc(r.row('meta')('created_at'))).run(conn)
-        .then (groups) ->
-            groups.each (err, group) ->
-                throw err if err
-                bets = group['reduction']
-                bets.forEach (bet) ->
-                    socket.emit 'update', bet
-        .catch (err) ->
-            console.log err
-        .done()
+app.ws '/', (ws, req) ->
 
+mainWs = expressWs.getWss('/')
 
-io.on 'connection', (socket) ->
-    sendData(socket)
-    return
+feeds = []
+fs.readFile 'update.log', 'utf-8', (err, data) ->
+    feeds = data.split("\n")
 
-reader = new (nsq.Reader)('update', 'site',
-    # lookupdHTTPAddresses: 'nsqlookupd:4161'
-    nsqdTCPAddresses: 'nsqd:4150')
+action = () ->
+    mainWs.clients.forEach (client) ->
+        # random feeds
+        client.send(feeds[Math.floor(Math.random() * feeds.length)])
 
-reader.connect()
-reader.on 'message', (msg) ->
-    j = msg.json()
-    if j.league != 'nba' or j.league != 'NBA'
-        msg.finish()
-        return
+setInterval action, 5000
 
-    io.emit 'update', j
-    msg.finish()
-    return

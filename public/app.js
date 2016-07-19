@@ -10092,7 +10092,8 @@ var _user$project$Main$NoOp = {ctor: 'NoOp'};
 var _user$project$Main$decode = function (str) {
 	var _p38 = function (_p37) {
 		return _elm_lang$core$Result$toMaybe(
-			A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Main$betDecoder, _p37));
+			_user$project$Main$log(
+				A2(_elm_lang$core$Json_Decode$decodeString, _user$project$Main$betDecoder, _p37)));
 	}(str);
 	if (_p38.ctor === 'Just') {
 		return _user$project$Main$Update(_p38._0);
@@ -10101,7 +10102,7 @@ var _user$project$Main$decode = function (str) {
 	}
 };
 var _user$project$Main$subscriptions = function (model) {
-	return A2(_elm_lang$websocket$WebSocket$listen, 'ws://localhost', _user$project$Main$decode);
+	return A2(_elm_lang$websocket$WebSocket$listen, 'ws://localhost:8000', _user$project$Main$decode);
 };
 var _user$project$Main$main = {
 	main: _elm_lang$html$Html_App$program(

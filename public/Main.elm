@@ -471,11 +471,11 @@ log r =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  WebSocket.listen "ws://localhost" decode
+  WebSocket.listen "ws://localhost:8000" decode
 
 decode : String -> Msg
 decode str =
-  case (decodeString betDecoder >> Result.toMaybe) str of
+  case (decodeString betDecoder >> log >> Result.toMaybe) str of
     Just bet ->
       Update bet
     Nothing ->
