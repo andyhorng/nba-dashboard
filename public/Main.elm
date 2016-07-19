@@ -1,22 +1,22 @@
-module Main where
+module Main exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Decode exposing (..)
 import Json.Encode
-import Signal exposing (Signal, Address)
-import SocketIO
 import Dict
 import Task exposing (Task)
-import Date.Format
 import Date
+import Date.Format
 import String
 import List
 import Array
+import WebSocket
+import Html.App as Html
 
 -- model
 
-type alias Bet = 
+type alias Bet =
   { oddType : String
   , teamA : String
   , teamB : String
@@ -52,7 +52,7 @@ type alias MoneyLineOdd =
   }
 
 
-type Odd 
+type Odd
   = Total TotalOdd
   | Spread SpreadOdd
   | MoneyLine MoneyLineOdd
@@ -67,7 +67,7 @@ type alias Model = {
   }
 
 
--- Competition Model 
+-- Competition Model
 type alias Source = String
 type alias Competition =
   { competitionToken : CompetitionToken
@@ -81,13 +81,13 @@ type alias Competition =
   }
 
 addBet : Bet -> Model -> Model
-addBet bet model = 
-  let 
-      updateRow dict = 
-        case Dict.get bet.competitionToken dict of 
+addBet bet model =
+  let
+      updateRow dict =
+        case Dict.get bet.competitionToken dict of
           Just competition ->
             let oldOdds = Dict.get bet.source competition.odds
-            in case oldOdds of 
+            in case oldOdds of
               Just oldOdds' ->
                 {competition | odds = Dict.insert bet.source (oldOdds' ++ [bet.odd]) competition.odds}
               Nothing ->
@@ -104,16 +104,16 @@ addBet bet model =
             , competitionToken = bet.competitionToken}
 
   in
-    case bet.oddType of 
-      "total" -> 
+    case bet.oddType of
+      "total" ->
         {model | total = Dict.insert bet.competitionToken (updateRow model.total) model.total}
-      "spread" -> 
+      "spread" ->
         {model | spread = Dict.insert bet.competitionToken (updateRow model.spread) model.spread}
-      "money_line" -> 
+      "money_line" ->
         {model | moneyLine = Dict.insert bet.competitionToken (updateRow model.moneyLine)  model.moneyLine}
       _ ->
         model
-  
+
 
 initialModel : Model
 initialModel = {
@@ -121,7 +121,7 @@ initialModel = {
   spread = Dict.empty,
   moneyLine = Dict.empty}
 
-emptyBet = { 
+emptyBet = {
   teamA = ""
   , teamB = ""
   , oddType = ""
@@ -137,21 +137,21 @@ emptyBet = {
 -- view
 
 formatDate : String -> Maybe String
-formatDate orig = 
-  case Date.fromString orig of 
+formatDate orig =
+  case Date.fromString orig of
     Ok date ->
-      let 
+      let
           -- hack...
           twdate = Date.fromTime <| (Date.toTime date) + 8*60*60
-      in 
+      in
           Just <| Date.Format.format "%Y/%m/%d %H:%M" twdate
     Err s ->
       Debug.log s
       Nothing
 
 translateSource : String -> String
-translateSource source = 
-  case source of 
+translateSource source =
+  case source of
 
     "twsport" ->
       "台彩"
@@ -163,7 +163,7 @@ translateSource source =
       "Unknown"
 
 translateTeamName : String -> String
-translateTeamName raw = 
+translateTeamName raw =
   let
       last : Array.Array String -> Maybe String
       last array = Array.get ((Array.length array)-1) array
@@ -175,7 +175,7 @@ translateTeamName raw =
 
         Just s ->
           case s of
-            "76ers" -> 
+            "76ers" ->
               "76人"
             "blazers" ->
               "拓荒者"
@@ -235,45 +235,45 @@ translateTeamName raw =
               "勇士"
             "wizards" ->
               "巫師"
-            _ -> 
+            _ ->
               "不知道"
 
 
 
-historyView : String -> List (String, String) -> Html
-historyView current history = 
-  div [class "tooltip-item"] 
+historyView : String -> List (String, String) -> Html Msg
+historyView current history =
+  div [class "tooltip-item"]
     [ text current
     , div [class "tooltip"]
-        [p [] 
+        [p []
           [ ul [] <| List.map (\(date, data)-> li [] [span [] [text date], span [class "num"] [text data]]) history
           ]
         ]
     ]
 
 
-totalRow : Competition -> Html
-totalRow row = 
-  let 
-      mapper getter odd = 
+totalRow : Competition -> Html Msg
+totalRow row =
+  let
+      mapper getter odd =
         case odd of
           Total data ->
             formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
           _ ->
             Nothing
 
-      showOdd : (String, List Odd) -> Maybe Html
-      showOdd (source, odds) = 
-        let 
+      showOdd : (String, List Odd) -> Maybe (Html Msg)
+      showOdd (source, odds) =
+        let
             odd = List.head (List.reverse odds)
         in
-           case odd of 
+           case odd of
               Just odd' ->
-                case odd' of 
+                case odd' of
                   Total data ->
-                    Just <| 
-                      div [class "stats"] 
-                        [ ul [] 
+                    Just <|
+                      div [class "stats"]
+                        [ ul []
                           [ li [] [text <| translateSource source, span [] [text "盤"]]
                           , li [] [historyView data.score (List.filterMap (mapper .score) odds), span [] [(text "總分")]]
                           , li [] [historyView data.oddOver (List.filterMap (mapper .oddOver) odds), span [] [(text "大於")]]
@@ -288,39 +288,39 @@ totalRow row =
 
       sort = List.sortBy fst
   in
-    div [class "row"] 
+    div [class "row"]
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-spreadRow : Competition -> Html
-spreadRow row = 
-  let 
-      showOdd : (String, List Odd) -> Maybe Html
-      showOdd (source, odds) = 
-        let 
+spreadRow : Competition -> Html Msg
+spreadRow row =
+  let
+      showOdd : (String, List Odd) -> Maybe (Html Msg)
+      showOdd (source, odds) =
+        let
             latest = List.head (List.reverse odds)
             getter getter1 getter2 oddRecord = (getter1 oddRecord) ++ "/" ++ (getter2 oddRecord)
 
-            mapper getter odd = 
+            mapper getter odd =
               case odd of
                 Spread data ->
                   formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
                 _ ->
                   Nothing
         in
-            case latest of 
+            case latest of
               Just odd' ->
-                case odd' of 
+                case odd' of
                   Spread data ->
                     Just <|
-                      div [class "stats"] 
-                        [ ul [] 
+                      div [class "stats"]
+                        [ ul []
                           [ li [] [text <| translateSource source, span [] [text "盤"]]
-                          , li [] [historyView (getter .scoreA .scoreB data) 
+                          , li [] [historyView (getter .scoreA .scoreB data)
                               (List.filterMap (mapper (getter .scoreA .scoreB)) odds), span [] [(text "讓分")]]
 
-                          , li [] [historyView (getter .oddA .oddB data) 
+                          , li [] [historyView (getter .oddA .oddB data)
                               (List.filterMap (mapper (getter .oddA .oddB)) odds), span [] [(text "賠率")]]
                           ]
                         ]
@@ -329,35 +329,35 @@ spreadRow row =
               _ ->
                 Nothing
   in
-    div [class "row"] 
+    div [class "row"]
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-moneyLineRow row = 
-  let 
-      showOdd : (String, List Odd) -> Maybe Html
-      showOdd (source, odds) = 
-        let 
+moneyLineRow row =
+  let
+      showOdd : (String, List Odd) -> Maybe (Html Msg)
+      showOdd (source, odds) =
+        let
             latest = List.head (List.reverse odds)
             getter getter1 getter2 oddRecord = (getter1 oddRecord) ++ "/" ++ (getter2 oddRecord)
 
-            mapper getter odd = 
+            mapper getter odd =
               case odd of
                 MoneyLine data ->
                   formatDate data.createdAt `Maybe.andThen` (\date -> Just (date, getter data))
                 _ ->
                   Nothing
         in
-            case latest of 
+            case latest of
               Just odd' ->
-                case odd' of 
+                case odd' of
                   MoneyLine data ->
                     Just <|
-                      div [class "stats"] 
-                        [ ul [] 
+                      div [class "stats"]
+                        [ ul []
                           [ li [] [text <| translateSource source, span [] [text "盤"]]
-                          , li [] [historyView (getter .oddA .oddB data) 
+                          , li [] [historyView (getter .oddA .oddB data)
                               (List.filterMap (mapper (getter .oddA .oddB)) odds), span [] [(text "賠率")]]
                           ]
                         ]
@@ -366,52 +366,48 @@ moneyLineRow row =
               _ ->
                 Nothing
   in
-    div [class "row"] 
+    div [class "row"]
       [ competitionInfo row
       , div [class "odd"] (List.filterMap showOdd (Dict.toList row.odds) )
       ]
 
-competitionInfo : Competition -> Html
-competitionInfo row = 
+competitionInfo : Competition -> Html Msg
+competitionInfo row =
   div [class "competition-info"]
     [ span [class "team-name"] [text <| translateTeamName row.teamA]
     , span [class "vs"] [text "v.s."]
-    , span [class "team-name"] [text <| translateTeamName row.teamB] 
-    , div [class "time"] [text <| case formatDate row.time of 
-        Just dstr -> 
+    , span [class "team-name"] [text <| translateTeamName row.teamB]
+    , div [class "time"] [text <| case formatDate row.time of
+        Just dstr ->
           dstr
 
-        Nothing -> 
+        Nothing ->
           ""
-      ] 
+      ]
     ]
 
-view : Address Action -> Model -> Html
-view address model = 
-  div [class "container"] 
-    [ div [class "type"] <| (h3 [] [text "大小分"]) :: List.map totalRow (Dict.values model.total) 
-    , div [class "type"] <| (h3 [] [text "讓分"]) :: List.map spreadRow (Dict.values model.spread) 
-    , div [class "type"] <| (h3 [] [text "不讓分"]) :: List.map moneyLineRow (Dict.values model.moneyLine) 
+view : Model -> Html Msg
+view model =
+  div [class "container"]
+    [ div [class "type"] <| (h3 [] [text "大小分"]) :: List.map totalRow (Dict.values model.total)
+    , div [class "type"] <| (h3 [] [text "讓分"]) :: List.map spreadRow (Dict.values model.spread)
+    , div [class "type"] <| (h3 [] [text "不讓分"]) :: List.map moneyLineRow (Dict.values model.moneyLine)
     ]
 
 
 -- update
-type Action 
+type Msg
   = NoOp
   | Update Bet
 
-update : Action -> Model -> Model
-update action model = 
-  case action of 
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+  case msg of
 
-    NoOp -> model
+    NoOp -> (model, Cmd.none)
 
     Update bet ->
-      addBet bet model
-
-actions : Signal.Mailbox Action
-actions =
-  Signal.mailbox NoOp
+      (addBet bet model, Cmd.none)
 
 -- Applicative's `pure`:
 constructing : a -> Decoder a
@@ -421,17 +417,9 @@ constructing = succeed
 apply : Decoder (a -> b) -> Decoder a -> Decoder b
 apply = object2 (<|)
 
-socket : Task x SocketIO.Socket
-socket = SocketIO.io "" SocketIO.defaultOptions
-rawBets : Signal.Mailbox String
-rawBets = Signal.mailbox "null"
-
-port responses : Task x ()
-port responses = socket `Task.andThen` SocketIO.on "update" rawBets.address
-
 oddDecoder : String -> String -> Decoder Odd
-oddDecoder oddType date = 
-    case oddType of 
+oddDecoder oddType date =
+    case oddType of
       "total" ->
         map Total
         <| object4 TotalOdd
@@ -457,8 +445,8 @@ oddDecoder oddType date =
 
 betDecoder : Decoder Bet
 betDecoder =
-  ("odd_type" := string) 
-  `andThen` (\s -> 
+  ("odd_type" := string)
+  `andThen` (\s ->
     (at ["meta", "created_at"] string)
       `andThen` \date -> (constructing Bet
         `apply` ("odd_type" := string)
@@ -474,23 +462,29 @@ betDecoder =
         `apply` ("odd" := oddDecoder s date)))
 
 log : Result String a -> Result String a
-log r = 
-  case r of 
+log r =
+  case r of
     Ok _ -> r
-    Err x -> 
+    Err x ->
       Debug.log x
       r
 
-bets : Signal Action
-bets 
-  = (Signal.filterMap ((decodeString betDecoder)>>log>>Result.toMaybe) emptyBet rawBets.signal)
-  |> Signal.map Update
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  WebSocket.listen "ws://localhost" decode
 
--- Here is the magic happens
-model : Signal Model
-model =
-  Signal.foldp update initialModel bets
+decode : String -> Msg
+decode str =
+  case (decodeString betDecoder >> Result.toMaybe) str of
+    Just bet ->
+      Update bet
+    Nothing ->
+      NoOp
 
-main : Signal Html
-main = 
-  Signal.map (view actions.address) model
+init : (Model, Cmd Msg)
+init =
+  (initialModel, Cmd.none)
+
+main =
+  Html.program
+    { init = init, update = update, view = view, subscriptions = subscriptions }
