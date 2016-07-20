@@ -3,6 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Json.Decode exposing (..)
+import Json.Decode.Extra exposing ((|:))
 import Json.Encode
 import Dict
 import Task exposing (Task)
@@ -409,16 +410,8 @@ update msg model =
     Update bet ->
       (addBet bet model, Cmd.none)
 
--- Applicative's `pure`:
-constructing : a -> Decoder a
-constructing = succeed
-
--- Applicative's `<*>`:
-apply : Decoder (a -> b) -> Decoder a -> Decoder b
-apply = object2 (<|)
-
-oddDecoder : String -> String -> Decoder Odd
-oddDecoder oddType date =
+oddDecoder : String -> Decoder Odd
+oddDecoder oddType =
     case oddType of
       "total" ->
         map Total
@@ -426,7 +419,7 @@ oddDecoder oddType date =
           ("score" := string)
           ("odd_under" := string)
           ("odd_over" := string)
-          (succeed date)
+          ("created_at" := string)
       "spread" ->
         map Spread
         <| object5 SpreadOdd
@@ -434,32 +427,31 @@ oddDecoder oddType date =
           ("score_b" := string)
           ("odd_a" := string)
           ("odd_b" := string)
-          (succeed date)
+          ("created_at" := string)
       "money_line" ->
         map MoneyLine
         <| object3 MoneyLineOdd
           ("odd_a" := string)
           ("odd_b" := string)
-          (succeed date)
+          ("created_at" := string)
       _ -> fail "Unknow odd type"
 
 betDecoder : Decoder Bet
 betDecoder =
   ("odd_type" := string)
   `andThen` (\s ->
-    (at ["meta", "created_at"] string)
-      `andThen` \date -> (constructing Bet
-        `apply` ("odd_type" := string)
-        `apply` ("team_a" := string)
-        `apply` ("team_b" := string)
-        `apply` ("time" := string)
-        `apply` ("league" := string)
-        `apply` ("region" := string)
-        `apply` ("sport" := string)
-        `apply` ("source" := string)
-        `apply` ("competition_token" := string)
-        `apply` (at ["meta", "created_at"] string)
-        `apply` ("odd" := oddDecoder s date)))
+      succeed Bet
+        |: ("odd_type" := string)
+        |: ("team_a" := string)
+        |: ("team_b" := string)
+        |: ("time" := string)
+        |: ("league" := string)
+        |: ("region" := string)
+        |: ("sport" := string)
+        |: ("source" := string)
+        |: ("competition_token" := string)
+        |: (at ["meta", "created_at"] string)
+        |: ("odd" := oddDecoder s))
 
 log : Result String a -> Result String a
 log r =
